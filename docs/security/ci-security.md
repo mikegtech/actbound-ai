@@ -21,11 +21,35 @@ CI is the authoritative enforcement layer for this repo. Local hooks provide fas
 
 The repo also includes `.github/CODEOWNERS` and `.env.example` as tracked hygiene files for public-repo readiness and safe local setup.
 
+## Branch strategy
+
+Workflows use a `push` + `pull_request` trigger model.
+
+**Push triggers** run on:
+
+- `main` — the integration/release branch
+- `feat/**` — active feature branches (e.g. `feat/actbound-foundation`)
+
+**Pull request triggers** run on PRs targeting any branch (no branch filter). This ensures PRs into `main` or into feature branches are always validated.
+
+**Dependency review** is PR-only — it compares the PR diff against the base, so a push trigger is not applicable.
+
+**CodeQL schedule** runs weekly on the repo's default branch only (GitHub Actions behavior for `schedule`).
+
+| Workflow              | push (`main`, `feat/**`) | pull_request (any target) | schedule |
+| --------------------- | ------------------------ | ------------------------- | -------- |
+| ci.yml                | Yes                      | Yes                       | —        |
+| security.yml          | Yes                      | Yes                       | —        |
+| codeql.yml            | Yes                      | Yes                       | Weekly   |
+| dependency-review.yml | —                        | Yes                       | —        |
+
+If the branch naming convention changes, update the `push.branches` list in each workflow.
+
 ## Workflows
 
 ### ci.yml — Quality
 
-Runs on every push to `main` and every PR. Single job with sequential steps.
+Runs on push to `main` and `feat/**`, and on every PR. Single job with sequential steps.
 
 | Step         | Command                         |
 | ------------ | ------------------------------- |
@@ -39,7 +63,7 @@ Permissions: `contents: read`
 
 ### security.yml — Security Scanning
 
-Runs on every push to `main` and every PR. Three parallel jobs.
+Runs on push to `main` and `feat/**`, and on every PR. Three parallel jobs.
 
 | Job        | Tool                              | What it does                           | Pinning                          |
 | ---------- | --------------------------------- | -------------------------------------- | -------------------------------- |
@@ -51,7 +75,7 @@ Permissions: `contents: read`
 
 ### codeql.yml — CodeQL Analysis
 
-Runs on push to `main`, PRs, and weekly (Monday 06:00 UTC).
+Runs on push to `main` and `feat/**`, PRs, and weekly (Monday 06:00 UTC).
 
 - Language: `javascript-typescript`
 - Uses GitHub's CodeQL engine for deep semantic SAST
