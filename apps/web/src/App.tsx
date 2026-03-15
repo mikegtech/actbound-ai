@@ -2,8 +2,13 @@ import { useEffect, useState } from "react";
 import type {
   AgentActionExecuteResult,
   AgentActionPreviewResult,
+  BrokeredTokenResponse,
   PermissionContextSummary,
   PermissionDecisionRecord,
+  ScopedTokenRequest,
+  TokenBrokerPreviewResult,
+  TokenBrokerStatus,
+  TokenCacheSummary,
   VaultConnection,
 } from "@actbound/sdk";
 import { OrchestratorApiClient } from "@actbound/sdk";
@@ -22,6 +27,14 @@ export function App() {
     useState<AgentActionPreviewResult | null>(null);
   const [executeResult, setExecuteResult] =
     useState<AgentActionExecuteResult | null>(null);
+  const [tokenBrokerStatus, setTokenBrokerStatus] =
+    useState<TokenBrokerStatus | null>(null);
+  const [tokenCacheSummary, setTokenCacheSummary] =
+    useState<TokenCacheSummary | null>(null);
+  const [tokenPreview, setTokenPreview] =
+    useState<TokenBrokerPreviewResult | null>(null);
+  const [brokeredToken, setBrokeredToken] =
+    useState<BrokeredTokenResponse | null>(null);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,9 +46,16 @@ export function App() {
       setError("");
 
       try {
-        const [permissionResponse, connectionResponse] = await Promise.all([
+        const [
+          permissionResponse,
+          connectionResponse,
+          brokerStatusResponse,
+          brokerCacheResponse,
+        ] = await Promise.all([
           orchestratorClient.getMePermissions(),
           orchestratorClient.getMeConnections(),
+          orchestratorClient.getTokenBrokerStatus(),
+          orchestratorClient.getTokenBrokerCache(),
         ]);
 
         if (!active) {
@@ -45,6 +65,8 @@ export function App() {
         setPermissionContext(permissionResponse.context);
         setDecisions(permissionResponse.decisions);
         setConnections(connectionResponse.connections);
+        setTokenBrokerStatus(brokerStatusResponse);
+        setTokenCacheSummary(brokerCacheResponse);
       } catch (loadError) {
         if (!active) {
           return;
@@ -81,6 +103,45 @@ export function App() {
     canPreview: previewDecision?.allowed ?? false,
     canExecute: executeDecision?.allowed ?? false,
   };
+  const tokenBrokerReadDecision = decisions.find(
+    (decision) => decision.permission === "brokered_tokens:read",
+  );
+  const tokenBrokerIssueDecision = decisions.find(
+    (decision) => decision.permission === "brokered_tokens:broker",
+  );
+  const tokenBrokerReuseDecision = decisions.find(
+    (decision) => decision.permission === "brokered_tokens:reuse",
+  );
+  const delegatedTokenDecision = decisions.find(
+    (decision) => decision.permission === "delegated_tokens:use",
+  );
+  const tokenCacheInspectDecision = decisions.find(
+    (decision) => decision.permission === "token_cache:inspect",
+  );
+
+  function buildBrokerRequest(): ScopedTokenRequest {
+    return {
+      audience: permissionContext?.attributes.tokenAudience ?? "agent-service",
+      scopes: ["valuations.execute"],
+      purpose: "Broker a valuation token for a protected placeholder flow",
+      intent:
+        permissionContext?.consent.status === "granted" ? "delegated" : "m2m",
+      actorId: permissionContext?.actor.id,
+      subjectId: permissionContext?.subject.id,
+      connectionId: selectedConnectionId,
+      consentGrantId: permissionContext?.consent.grantId,
+    };
+  }
+
+  async function refreshTokenBrokerPanels() {
+    const [brokerStatusResponse, brokerCacheResponse] = await Promise.all([
+      orchestratorClient.getTokenBrokerStatus(),
+      orchestratorClient.getTokenBrokerCache(),
+    ]);
+
+    setTokenBrokerStatus(brokerStatusResponse);
+    setTokenCacheSummary(brokerCacheResponse);
+  }
 
   async function handlePreview() {
     setPreviewResult(null);
@@ -128,6 +189,45 @@ export function App() {
         requestError instanceof Error
           ? requestError.message
           : "Unable to execute agent action.",
+      );
+    }
+  }
+
+  async function handleTokenPreview() {
+    setTokenPreview(null);
+    setBrokeredToken(null);
+    setError("");
+
+    try {
+      const result =
+        await orchestratorClient.previewBrokeredToken(buildBrokerRequest());
+
+      setTokenPreview(result);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to preview token broker request.",
+      );
+    }
+  }
+
+  async function handleTokenRetrieve() {
+    setTokenPreview(null);
+    setBrokeredToken(null);
+    setError("");
+
+    try {
+      const result =
+        await orchestratorClient.retrieveBrokeredToken(buildBrokerRequest());
+
+      setBrokeredToken(result);
+      await refreshTokenBrokerPanels();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to retrieve brokered token metadata.",
       );
     }
   }
@@ -236,6 +336,143 @@ export function App() {
               </p>
             ) : null}
           </div>
+        </Panel>
+
+        <Panel eyebrow="Token Broker" title="Cache-first token broker">
+          <div className="hero__status-row">
+            <StatusPill
+              tone={
+                tokenBrokerStatus?.cache.backend === "redis"
+                  ? "success"
+                  : "neutral"
+              }
+            >
+              {tokenBrokerStatus
+                ? `${tokenBrokerStatus.cache.backend} cache`
+                : "Broker status unavailable"}
+            </StatusPill>
+            <StatusPill
+              tone={tokenCacheInspectDecision?.allowed ? "success" : "warning"}
+            >
+              {tokenCacheInspectDecision?.allowed
+                ? "Cache inspection allowed"
+                : "Cache inspection restricted"}
+            </StatusPill>
+          </div>
+
+          {tokenBrokerStatus ? (
+            <div className="context-grid">
+              <div className="context-card">
+                <strong>Broker status</strong>
+                <p>{tokenBrokerStatus.status}</p>
+                <p>
+                  hits {tokenBrokerStatus.cache.hits} / misses{" "}
+                  {tokenBrokerStatus.cache.misses}
+                </p>
+              </div>
+              <div className="context-card">
+                <strong>Cache</strong>
+                <p>{tokenBrokerStatus.cache.entryCount} entries</p>
+                <p>
+                  {tokenBrokerStatus.cache.fallbackInUse
+                    ? "In-memory fallback active"
+                    : "Redis active"}
+                </p>
+              </div>
+              <div className="context-card">
+                <strong>Supported intents</strong>
+                <p>{tokenBrokerStatus.supportedIntents.join(", ")}</p>
+                <p>{tokenBrokerStatus.integrations.delegated}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="empty-state">
+              Token broker status appears after the backend responds.
+            </p>
+          )}
+
+          <div className="action-stack">
+            <button
+              disabled={!(tokenBrokerReadDecision?.allowed ?? false)}
+              onClick={() => void handleTokenPreview()}
+              type="button"
+            >
+              Preview broker request
+            </button>
+            <button
+              disabled={
+                !(
+                  tokenBrokerIssueDecision?.allowed ||
+                  tokenBrokerReuseDecision?.allowed ||
+                  delegatedTokenDecision?.allowed
+                )
+              }
+              onClick={() => void handleTokenRetrieve()}
+              type="button"
+            >
+              Retrieve brokered token metadata
+            </button>
+          </div>
+
+          {tokenPreview ? (
+            <div className="feedback-block">
+              <p className="feedback">{tokenPreview.summary}</p>
+              <p className="feedback feedback--muted">
+                cache {tokenPreview.cacheHit ? "hit" : "miss"} / backend{" "}
+                {tokenPreview.cache.backend} / permission{" "}
+                {tokenPreview.permissionDecision.permission}
+              </p>
+            </div>
+          ) : null}
+
+          {brokeredToken ? (
+            <article className="connection-card">
+              <div className="connection-card__header">
+                <strong>{brokeredToken.metadata.source}</strong>
+                <StatusPill
+                  tone={brokeredToken.metadata.cacheHit ? "success" : "neutral"}
+                >
+                  {brokeredToken.metadata.cacheHit ? "Cache hit" : "Cache miss"}
+                </StatusPill>
+              </div>
+              <p>Source type: {brokeredToken.metadata.sourceType}</p>
+              <p>Audience: {brokeredToken.metadata.audience}</p>
+              <p className="connection-card__scopes">
+                {brokeredToken.metadata.scopes.join(", ")}
+              </p>
+              <p>
+                Expires:{" "}
+                {new Date(brokeredToken.metadata.expiresAt).toLocaleString()}
+              </p>
+            </article>
+          ) : null}
+
+          {tokenCacheSummary?.entries.length ? (
+            <div className="token-cache-list">
+              {tokenCacheSummary.entries.map((entry) => (
+                <article key={entry.cacheKey} className="connection-card">
+                  <div className="connection-card__header">
+                    <strong>{entry.source}</strong>
+                    <StatusPill tone="neutral">
+                      {entry.hitCount} hits
+                    </StatusPill>
+                  </div>
+                  <p>{entry.audience}</p>
+                  <p className="connection-card__scopes">
+                    {entry.scopes.join(", ")}
+                  </p>
+                  <p>
+                    intent {entry.intent} / expires{" "}
+                    {new Date(entry.expiresAt).toLocaleString()}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-state">
+              Broker cache entries will appear after the first token retrieval.
+            </p>
+          )}
         </Panel>
 
         <Panel eyebrow="Actions" title="Operator workflow">

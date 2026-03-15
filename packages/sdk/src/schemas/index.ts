@@ -8,5 +8,6 @@ export * from "./permission-decision";
 export * from "./responses";
 export * from "./scoped-token-request";
 export * from "./standard-api-error";
+export * from "./token-broker";
 export * from "./valuation";
 export * from "./vault-connection";

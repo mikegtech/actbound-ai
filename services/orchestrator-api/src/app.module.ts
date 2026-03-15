@@ -7,8 +7,10 @@ import { AuditEventsController } from "./modules/audit-events.controller";
 import { DocsController } from "./modules/docs.controller";
 import { HealthController } from "./modules/health.controller";
 import { MeController } from "./modules/me.controller";
+import { TokenBrokerModule } from "./token-broker/token-broker.module";
 
 @Module({
+  imports: [TokenBrokerModule],
   controllers: [
     AgentActionsController,
     AuditEventsController,

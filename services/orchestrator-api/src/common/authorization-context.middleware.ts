@@ -94,11 +94,16 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
       request.header("x-vault-connection-status"),
     );
     const consentScopes = parseScopes(
-      ["agent.preview", "agent.execute"],
+      ["agent.preview", "agent.execute", "tokens.delegated"],
       request.header("x-consent-scopes"),
     );
     const vaultScopes = parseScopes(
-      ["connections.read", "agent.preview", "agent.execute"],
+      [
+        "connections.read",
+        "agent.preview",
+        "agent.execute",
+        "tokens.delegated",
+      ],
       request.header("x-vault-scopes") ?? request.header("x-token-scopes"),
     );
 

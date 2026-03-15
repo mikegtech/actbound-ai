@@ -9,8 +9,8 @@ The shared permission model is typed in `packages/authorization/src`.
 - Actor types: `user`, `agent`, `system`
 - Roles: `admin`, `operator`, `viewer`, `service`
 - Subject types: `user`, `workspace`
-- Resources: `permissions`, `consent_grant`, `vault_connection`, `agent_action`, `audit_event`, `valuation`, `listing`
-- Actions: `read`, `use`, `preview`, `execute`
+- Resources: `permissions`, `consent_grant`, `vault_connection`, `agent_action`, `audit_event`, `brokered_token`, `delegated_token`, `token_cache`, `valuation`, `listing`
+- Actions: `read`, `use`, `preview`, `execute`, `broker`, `inspect`
 
 Authorization context is evaluated from five explicit parts:
 
@@ -31,6 +31,11 @@ The current centralized permission catalog is:
 - `agent_actions:preview`
 - `agent_actions:execute`
 - `audit_events:read`
+- `brokered_tokens:read`
+- `brokered_tokens:broker`
+- `brokered_tokens:reuse`
+- `delegated_tokens:use`
+- `token_cache:inspect`
 - `valuations:execute`
 - `listings:read`
 
@@ -78,6 +83,11 @@ The central engine can directly evaluate:
 - agent action preview
 - agent action execution
 - audit-event viewing
+- brokered token status access
+- brokered token issuance access
+- brokered token reuse
+- delegated token use
+- token cache inspection
 - general permission checks for service-level operations such as valuations and listing reads
 
 The intent is simple: explicit policy checks with explicit deny reasons, not hidden logic spread across controllers or React components.
@@ -89,6 +99,7 @@ The intent is simple: explicit policy checks with explicit deny reasons, not hid
 - It assembles request authorization context
 - It exposes `/me/permissions` for UI consumption
 - It evaluates preview and execute requests before downstream work
+- It exposes safe token broker status, preview, retrieval, and cache-inspection endpoints
 - It keeps TODO markers where Auth0 delegated grants and Token Vault token exchange will later replace header-derived placeholder context
 
 `services/agent-service` is the protected internal re-enforcement layer.

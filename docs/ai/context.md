@@ -59,28 +59,35 @@ GitHub local and pipeline security hardening is complete. Local git hooks (pre-c
 
 ### Phase 2 - Central Permission System
 
+Status: done
+
+The centralized permission system is complete. `packages/authorization` now owns the typed permission model and policy engine, `orchestrator-api` returns backend-issued permission decisions, `agent-service` re-checks protected operations, and the web UI consumes structured decision results without embedding policy rules.
+
+### Phase 3 - Token Broker and M2M Optimization
+
 Status: in-progress
 
 ## Current Focus
 
-- Make `packages/authorization` the typed source of truth for resources, actions, scopes, decision reasons, and policy evaluation
-- Back orchestrator permission endpoints with the real policy engine instead of placeholder strings
-- Re-enforce protected placeholder operations in `agent-service` using the same package-level policy engine
-- Expose structured permission decisions and permission context summaries through the shared SDK and into the web UI
+- Add a broker foundation in `services/orchestrator-api` that separates token intent shaping, cache lookup, issuance, and safe response shaping
+- Reduce repeated Auth0 M2M demand with cache-first token reuse and explicit broker metadata for demo/debug flows
+- Add shared token broker contracts in `packages/sdk` and wire them into the web UI without exposing raw token material
+- Keep Auth0 client credentials exchange and Auth0 Token Vault delegated retrieval as explicit TODO seams for later phases
 
-## Definition of Done - Phase 2
+## Definition of Done - Phase 3
 
-- `packages/authorization` owns typed actor, subject, resource, scope, context, decision, and decision-reason models
-- The central policy engine evaluates consent access, Token Vault connection access, agent preview, agent execution, audit viewing, valuations, and listing reads coherently
-- `services/orchestrator-api` returns centralized decisions for `/me/permissions` and preview-style evaluation responses
-- `services/agent-service` independently re-checks protected operations and returns structured allow/deny results
-- `apps/web` renders backend-issued decision reasons without embedding policy rules
-- `docs/permissions.md` and the execution context describe the real Phase 2 model
+- `services/orchestrator-api` contains a token broker foundation with preview/status, retrieval, and cache inspection flows
+- The broker uses a cache-first path with Redis when configured and an in-memory fallback for local development
+- `packages/sdk` defines typed broker request, response, cache summary, and safe token metadata schemas
+- `packages/authorization` can evaluate broker access, reuse, delegated token use, and cache inspection decisions
+- `apps/web` renders backend-issued token broker and cache metadata without local policy logic
+- README and broker documentation explain how the broker reduces M2M overuse and where future Auth0 integration will land
 
-## Out of Scope for Phase 2
+## Out of Scope for Phase 3
 
-- Final Auth0 Token Vault delegated grant wiring
-- Brokered M2M token optimization and caching
+- Real Auth0 client credentials exchange
+- Real Auth0 Token Vault delegated token retrieval
+- Production-grade throttling, backoff, and distributed invalidation
 - Final audit UX, submission polish, and demo packaging
 
 ### Phase 1 Goals (Completed)
@@ -111,12 +118,12 @@ Goal: Establish the repo structure, tooling, docs, and baseline apps/services/pa
 
 ### EPIC-002 - Central Permission System
 
-Status: in-progress
+Status: done
 Goal: Create typed resources, actions, policy context, and permission decision evaluation.
 
 ### EPIC-003 - Token Broker and M2M Optimization
 
-Status: planned
+Status: in-progress
 Goal: Reduce Auth0 M2M token overuse through brokered issuance, caching, and reuse.
 
 ### EPIC-004 - Auth0 Token Vault Delegated Access
@@ -153,18 +160,19 @@ Goal: Finalize story, diagrams, README, public branch, demo flow, and Devpost as
 - Public-repo hygiene files present: `.github/CODEOWNERS`, `.env.example`
 - Security documentation: local-hooks.md, ci-security.md
 - AI guardrails documented in docs/ai/context.md
+- Phase 2 central permission system completed across authorization, orchestrator-api, agent-service, sdk contracts, and web UI
 
 ### In Progress
 
-- Phase 2 central permission system
-- Typed policy engine and decision reason model
-- Backend-backed permission decisions for orchestrator and agent-service
+- Phase 3 token broker foundation
+- Cache-first broker flow with Redis-first and in-memory fallback behavior
+- Shared broker contracts and safe token metadata for UI/debug flows
 
 ### Next
 
-- Token broker and M2M optimization
 - Auth0 Token Vault delegated access wiring
 - Auditability and user control refinement
+- Hackathon submission readiness
 
 ## Repo-Wide AI Guardrails
 

@@ -75,6 +75,10 @@ export class AgentActionsController {
               previewContext.attributes.tokenAudience ?? "agent-service",
             scopes: ["valuations.execute"],
             purpose: `Execute ${body.action}`,
+            intent: "delegated",
+            actorId: previewContext.actor.id,
+            subjectId: previewContext.subject.id,
+            connectionId: body.connectionId,
             consentGrantId:
               body.consentGrantId ?? previewContext.consent.grantId,
           }

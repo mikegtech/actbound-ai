@@ -5,9 +5,14 @@ import {
   AgentActionPreviewRequestSchema,
   AgentActionPreviewResultSchema,
   AuditEventListSchema,
+  BrokeredTokenResponseSchema,
   HealthStatusSchema,
   PermissionDecisionListSchema,
+  ScopedTokenRequestSchema,
   StandardApiErrorSchema,
+  TokenBrokerPreviewResultSchema,
+  TokenBrokerStatusSchema,
+  TokenCacheSummarySchema,
   VaultConnectionListSchema,
 } from "../schemas";
 
@@ -101,6 +106,80 @@ export const orchestratorRoutes = {
       200: {
         description: "Audit event list",
         schema: AuditEventListSchema,
+      },
+    },
+  },
+  tokenBrokerStatus: {
+    method: "get",
+    path: "/token-broker/status",
+    summary: "Token broker health and cache status",
+    operationId: "getTokenBrokerStatus",
+    tags: ["Token Broker"],
+    responses: {
+      200: {
+        description: "Token broker status",
+        schema: TokenBrokerStatusSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  previewBrokeredToken: {
+    method: "post",
+    path: "/token-broker/preview",
+    summary: "Preview a brokered token request",
+    operationId: "previewBrokeredToken",
+    tags: ["Token Broker"],
+    request: {
+      body: ScopedTokenRequestSchema,
+    },
+    responses: {
+      200: {
+        description: "Brokered token preview result",
+        schema: TokenBrokerPreviewResultSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  retrieveBrokeredToken: {
+    method: "post",
+    path: "/token-broker/retrieve",
+    summary: "Retrieve a brokered token response",
+    operationId: "retrieveBrokeredToken",
+    tags: ["Token Broker"],
+    request: {
+      body: ScopedTokenRequestSchema,
+    },
+    responses: {
+      200: {
+        description: "Brokered token response",
+        schema: BrokeredTokenResponseSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  tokenBrokerCache: {
+    method: "get",
+    path: "/token-broker/cache",
+    summary: "Inspect token broker cache metadata",
+    operationId: "getTokenBrokerCacheSummary",
+    tags: ["Token Broker"],
+    responses: {
+      200: {
+        description: "Token cache summary",
+        schema: TokenCacheSummarySchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
       },
     },
   },

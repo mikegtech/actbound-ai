@@ -26,6 +26,26 @@ export interface AuthorizationPolicyEngine extends PolicyEvaluator {
   evaluateAllPermissions(
     context: AuthorizationContext,
   ): AuthorizationDecision[];
+  evaluateBrokeredTokenRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateTokenBrokerAccess(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateTokenReuse(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateDelegatedTokenUse(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateTokenCacheInspection(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
   evaluateUserConsentPermission(
     context: AuthorizationContext,
     requiredScopes?: PermissionScope[],
@@ -309,6 +329,71 @@ export class DefaultAuthorizationPolicyEngine implements AuthorizationPolicyEngi
     );
   }
 
+  evaluateBrokeredTokenRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "brokered_tokens:read",
+      resource ?? {
+        type: "brokered_token",
+      },
+    );
+  }
+
+  evaluateTokenBrokerAccess(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "brokered_tokens:broker",
+      resource ?? {
+        type: "brokered_token",
+      },
+    );
+  }
+
+  evaluateTokenReuse(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "brokered_tokens:reuse",
+      resource ?? {
+        type: "brokered_token",
+      },
+    );
+  }
+
+  evaluateDelegatedTokenUse(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "delegated_tokens:use",
+      resource ?? {
+        type: "delegated_token",
+      },
+    );
+  }
+
+  evaluateTokenCacheInspection(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "token_cache:inspect",
+      resource ?? {
+        type: "token_cache",
+      },
+    );
+  }
+
   evaluateUserConsentPermission(
     context: AuthorizationContext,
     requiredScopes: PermissionScope[] = [],
@@ -413,6 +498,41 @@ export function evaluateAllPermissions(
   context: AuthorizationContext,
 ): AuthorizationDecision[] {
   return policyEngine.evaluateAllPermissions(context);
+}
+
+export function evaluateBrokeredTokenRead(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateBrokeredTokenRead(context, resource);
+}
+
+export function evaluateTokenBrokerAccess(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateTokenBrokerAccess(context, resource);
+}
+
+export function evaluateTokenReuse(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateTokenReuse(context, resource);
+}
+
+export function evaluateDelegatedTokenUse(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateDelegatedTokenUse(context, resource);
+}
+
+export function evaluateTokenCacheInspection(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateTokenCacheInspection(context, resource);
 }
 
 export function evaluateUserConsentPermission(
