@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "strict": true,
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@actbound/authorization": ["packages/authorization/src/index.ts"],
+      "@actbound/authorization/*": ["packages/authorization/src/*"],
+      "@actbound/sdk": ["packages/sdk/src/index.ts"],
+      "@actbound/sdk/*": ["packages/sdk/src/*"],
+      "@actbound/ui": ["packages/ui/src/index.ts"],
+      "@actbound/ui/*": ["packages/ui/src/*"]
+    }
+  }
+}

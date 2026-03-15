@@ -1,0 +1,14 @@
+# Gitleaks configuration for ActBound AI
+# Default rules cover AWS keys, GCP credentials, GitHub tokens, JWTs,
+# private keys, generic API keys, and more.
+#
+# Add repo-specific allowlist entries below when needed.
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+title = "ActBound AI Gitleaks Config"
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+  '''pnpm-lock\.yaml''',
+]

@@ -1,0 +1,16 @@
+{
+  "name": "@actbound/web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@actbound/sdk": "workspace:*",
+    "@actbound/ui": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

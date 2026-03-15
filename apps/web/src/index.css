@@ -1,0 +1,155 @@
+:root {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: #10263b;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(245, 182, 122, 0.32),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at right,
+      rgba(84, 160, 197, 0.18),
+      transparent 24rem
+    ),
+    linear-gradient(180deg, #fff8ef 0%, #f7fbff 100%);
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #123d5a 0%, #245b78 100%);
+  color: #fff8ef;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.85rem 1.15rem;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: 3rem 1.25rem 4rem;
+}
+
+.hero {
+  margin-bottom: 2rem;
+}
+
+.hero__eyebrow {
+  color: #8a5a2b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  line-height: 0.98;
+  margin: 0;
+  max-width: 12ch;
+}
+
+.hero__copy {
+  font-size: 1.05rem;
+  margin: 1rem 0 1.25rem;
+  max-width: 58ch;
+}
+
+.hero__status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.connection-list,
+.action-stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.connection-card {
+  background: #fffdf9;
+  border: 1px solid rgba(19, 48, 70, 0.1);
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+}
+
+.connection-card p {
+  margin: 0.25rem 0 0;
+  color: #355067;
+}
+
+.connection-card__header {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.connection-card__scopes {
+  font-size: 0.92rem;
+}
+
+.feedback {
+  color: #17344c;
+  margin: 0.9rem 0 0;
+}
+
+.feedback--error {
+  color: #912e1f;
+}
+
+.empty-state {
+  color: #5f7485;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding-top: 2rem;
+  }
+
+  .hero h1 {
+    max-width: none;
+  }
+}

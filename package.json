@@ -1,0 +1,33 @@
+{
+  "name": "actbound-ai",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.6.3",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "dev": "pnpm --parallel --filter @actbound/web --filter @actbound/orchestrator-api --filter @actbound/agent-service run dev",
+    "dev:web": "pnpm --filter @actbound/web dev",
+    "dev:orchestrator": "pnpm --filter @actbound/orchestrator-api dev",
+    "dev:agent": "pnpm --filter @actbound/agent-service dev",
+    "lint": "eslint . --ext .ts,.tsx,.js,.cjs,.mjs",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "openapi:generate": "pnpm --filter @actbound/sdk openapi:generate"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1",
+    "vite": "^6.2.2"
+  }
+}
