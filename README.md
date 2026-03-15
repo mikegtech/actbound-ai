@@ -48,3 +48,12 @@ Generate static OpenAPI artifacts:
 ```bash
 pnpm openapi:generate
 ```
+
+## Dependency Consistency
+
+Syncpack is used as a workspace guard to keep shared dependency versions aligned and to catch version drift in pull requests before it leaks into multiple packages.
+
+- `pnpm syncpack:lint` validates the repo against the root Syncpack policy and should run in CI.
+- `pnpm syncpack:fix` rewrites package manifests when duplicated dependency versions drift out of alignment.
+- External npm dependencies intentionally use caret ranges in this repo. That keeps controlled minor and patch upgrades available while Syncpack prevents packages from silently diverging.
+- Local `@actbound/*` links intentionally stay on `workspace:*` and are excluded from semver-range enforcement.

@@ -1,0 +1,89 @@
+{
+  "$schema": "./node_modules/syncpack/schema.json",
+  "source": [
+    "package.json",
+    "apps/*/package.json",
+    "services/*/package.json",
+    "packages/*/package.json"
+  ],
+  "versionGroups": [
+    {
+      "label": "Ignore local workspace protocol links",
+      "dependencies": ["@actbound/**"],
+      "dependencyTypes": ["dev", "peer", "prod"],
+      "specifierTypes": ["workspace-protocol"],
+      "isIgnored": true
+    },
+    {
+      "label": "Workspace toolchain stays aligned to the root package",
+      "dependencies": [
+        "@eslint/js",
+        "@types/express",
+        "@types/node",
+        "@types/react",
+        "@types/react-dom",
+        "@vitejs/plugin-react",
+        "eslint",
+        "eslint-plugin-react-hooks",
+        "eslint-plugin-react-refresh",
+        "globals",
+        "prettier",
+        "syncpack",
+        "tsx",
+        "typescript",
+        "typescript-eslint",
+        "vite"
+      ],
+      "dependencyTypes": ["dev", "peer", "prod"],
+      "snapTo": ["actbound-ai"]
+    },
+    {
+      "label": "React runtime versions follow the web app",
+      "dependencies": ["react", "react-dom"],
+      "dependencyTypes": ["dev", "peer", "prod"],
+      "snapTo": ["@actbound/web"]
+    },
+    {
+      "label": "Nest runtime versions stay aligned across server packages",
+      "dependencies": [
+        "@nestjs/common",
+        "@nestjs/core",
+        "@nestjs/platform-express",
+        "reflect-metadata",
+        "rxjs"
+      ],
+      "dependencyTypes": ["peer", "prod"],
+      "snapTo": ["@actbound/orchestrator-api"]
+    },
+    {
+      "label": "Shared contract dependencies follow the SDK",
+      "dependencies": ["@asteasolutions/zod-to-openapi", "zod"],
+      "dependencyTypes": ["dev", "peer", "prod"],
+      "snapTo": ["@actbound/sdk"]
+    }
+  ],
+  "semverGroups": [
+    {
+      "label": "Ignore local workspace protocol links",
+      "dependencies": ["@actbound/**"],
+      "dependencyTypes": ["dev", "peer", "prod"],
+      "specifierTypes": ["workspace-protocol"],
+      "isIgnored": true
+    },
+    {
+      "label": "External npm dependencies use caret ranges",
+      "dependencyTypes": ["dev", "peer", "prod"],
+      "specifierTypes": [
+        "exact",
+        "latest",
+        "major",
+        "minor",
+        "range",
+        "range-complex",
+        "range-major",
+        "range-minor"
+      ],
+      "range": "^"
+    }
+  ]
+}

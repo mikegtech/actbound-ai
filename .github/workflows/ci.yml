@@ -2,14 +2,16 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
-jobs:
-  lint-build:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
 
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -23,10 +25,23 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm lint
 
+      - name: Syncpack lint
+        run: pnpm syncpack:lint
+
+      - name: Format check
+        run: pnpm exec prettier --check .
+
+      - name: Typecheck
+        run: pnpm typecheck
+
       - name: Build
         run: pnpm build
+
+      # TODO: Enable when test suite exists
+      # - name: Test
+      #   run: pnpm test

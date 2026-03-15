@@ -1,0 +1,49 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  actionlint:
+    name: Workflow Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download actionlint
+        id: get-actionlint
+        run: bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.7
+        shell: bash
+
+      - name: Run actionlint
+        run: ./actionlint -color
+        shell: bash
+
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config p/default --config p/javascript --error --quiet
