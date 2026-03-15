@@ -14,8 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4
         with:
           version: 10.6.3
 
@@ -42,6 +44,6 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # TODO: Enable when test suite exists
+      # TODO: Enable when test suite exists and add "Test" to required status checks.
       # - name: Test
       #   run: pnpm test

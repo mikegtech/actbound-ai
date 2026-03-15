@@ -29,6 +29,15 @@ ActBound AI is scaffolded as a `pnpm` monorepo with a React frontend, two NestJS
 - `services/agent-service` re-checks protected operations using the shared authorization package before returning placeholder domain responses.
 - `apps/web` consumes permission decisions returned by the backend and does not contain raw policy rules.
 
+## Permission System
+
+Phase 2 centers authorization in `packages/authorization`.
+
+- The package defines typed actors, subjects, resources, actions, scopes, permission context, decisions, and decision reasons.
+- `orchestrator-api` evaluates user-facing permission decisions and returns them to the web app.
+- `agent-service` re-enforces protected placeholder operations with the same shared engine instead of trusting upstream assumptions.
+- Auth0 delegated-consent and Token Vault exchange points remain explicit `TODO` integration seams rather than placeholder policy logic in the UI.
+
 ## Getting Started
 
 ```bash

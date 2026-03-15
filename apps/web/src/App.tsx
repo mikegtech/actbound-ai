@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import type { PermissionDecisionRecord, VaultConnection } from "@actbound/sdk";
+import type {
+  AgentActionExecuteResult,
+  AgentActionPreviewResult,
+  PermissionContextSummary,
+  PermissionDecisionRecord,
+  VaultConnection,
+} from "@actbound/sdk";
 import { OrchestratorApiClient } from "@actbound/sdk";
 import { Panel, PermissionDecisionList, StatusPill } from "@actbound/ui";
 
@@ -8,10 +14,14 @@ const orchestratorClient = new OrchestratorApiClient(
 );
 
 export function App() {
+  const [permissionContext, setPermissionContext] =
+    useState<PermissionContextSummary | null>(null);
   const [decisions, setDecisions] = useState<PermissionDecisionRecord[]>([]);
   const [connections, setConnections] = useState<VaultConnection[]>([]);
-  const [previewResult, setPreviewResult] = useState<string>("");
-  const [executeResult, setExecuteResult] = useState<string>("");
+  const [previewResult, setPreviewResult] =
+    useState<AgentActionPreviewResult | null>(null);
+  const [executeResult, setExecuteResult] =
+    useState<AgentActionExecuteResult | null>(null);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -32,6 +42,7 @@ export function App() {
           return;
         }
 
+        setPermissionContext(permissionResponse.context);
         setDecisions(permissionResponse.decisions);
         setConnections(connectionResponse.connections);
       } catch (loadError) {
@@ -72,20 +83,21 @@ export function App() {
   };
 
   async function handlePreview() {
-    setPreviewResult("");
-    setExecuteResult("");
+    setPreviewResult(null);
+    setExecuteResult(null);
     setError("");
 
     try {
       const result = await orchestratorClient.previewAgentAction({
         action: "valuation.reconcile",
         connectionId: selectedConnectionId,
+        consentGrantId: permissionContext?.consent.grantId,
         payload: {
           listingId: "listing_demo_001",
         },
       });
 
-      setPreviewResult(result.summary);
+      setPreviewResult(result);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -96,20 +108,21 @@ export function App() {
   }
 
   async function handleExecute() {
-    setPreviewResult("");
-    setExecuteResult("");
+    setPreviewResult(null);
+    setExecuteResult(null);
     setError("");
 
     try {
       const result = await orchestratorClient.executeAgentAction({
         action: "valuation.reconcile",
         connectionId: selectedConnectionId,
+        consentGrantId: permissionContext?.consent.grantId,
         payload: {
           listingId: "listing_demo_001",
         },
       });
 
-      setExecuteResult(`${result.status}: ${result.reasons.join(" ")}`);
+      setExecuteResult(result);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -164,6 +177,39 @@ export function App() {
           )}
         </Panel>
 
+        <Panel eyebrow="Context" title="Centralized permission context">
+          {permissionContext ? (
+            <div className="context-grid">
+              <div className="context-card">
+                <strong>Actor</strong>
+                <p>
+                  {permissionContext.actor.id} / {permissionContext.actor.type}
+                </p>
+                <p>{permissionContext.actor.roles.join(", ")}</p>
+              </div>
+              <div className="context-card">
+                <strong>Consent</strong>
+                <p>{permissionContext.consent.status}</p>
+                <p>
+                  {permissionContext.consent.scopes.join(", ") || "No scopes"}
+                </p>
+              </div>
+              <div className="context-card">
+                <strong>Token Vault</strong>
+                <p>{permissionContext.tokenVaultConnection.status}</p>
+                <p>
+                  {permissionContext.tokenVaultConnection.scopes.join(", ") ||
+                    "No scopes"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="empty-state">
+              Permission context appears after the backend resolves the request.
+            </p>
+          )}
+        </Panel>
+
         <Panel eyebrow="Connections" title="Consent and vault context">
           <div className="connection-list">
             {connections.map((connection) => (
@@ -209,8 +255,31 @@ export function App() {
               Execute agent action
             </button>
           </div>
-          {previewResult ? <p className="feedback">{previewResult}</p> : null}
-          {executeResult ? <p className="feedback">{executeResult}</p> : null}
+          {previewResult ? (
+            <div className="feedback-block">
+              <p className="feedback">{previewResult.summary}</p>
+              <p className="feedback feedback--muted">
+                {previewResult.permissionDecision.reasons
+                  .map((reason) => `${reason.code}: ${reason.message}`)
+                  .join(" ")}
+              </p>
+            </div>
+          ) : null}
+          {executeResult ? (
+            <div className="feedback-block">
+              <p className="feedback">
+                {executeResult.status}:{" "}
+                {executeResult.permissionDecision.reasons
+                  .map((reason) => reason.message)
+                  .join(" ")}
+              </p>
+              <p className="feedback feedback--muted">
+                {executeResult.permissionDecision.reasons
+                  .map((reason) => reason.code)
+                  .join(", ")}
+              </p>
+            </div>
+          ) : null}
         </Panel>
       </section>
     </main>

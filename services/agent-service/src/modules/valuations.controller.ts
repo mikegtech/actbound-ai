@@ -18,11 +18,23 @@ export class ValuationsController {
   ) {
     const authContext = request.authContext;
     const decision = authContext
-      ? evaluatePermission(authContext, "valuations:execute")
+      ? evaluatePermission(authContext, "valuations:execute", {
+          type: "valuation",
+          id: body.listingId,
+          ownerSubjectId: authContext.subject.id,
+        })
       : {
           permission: "valuations:execute" as const,
+          resource: "valuation" as const,
+          action: "execute" as const,
+          resourceId: body.listingId,
           allowed: false,
-          reasons: ["Authorization context missing in agent-service."],
+          reasons: [
+            {
+              code: "authorization_context_missing" as const,
+              message: "Authorization context missing in agent-service.",
+            },
+          ],
         };
 
     return {
@@ -32,7 +44,7 @@ export class ValuationsController {
         ? [
             `Valuation accepted for listing ${body.listingId} using ${body.valuationMethod}.`,
           ]
-        : decision.reasons,
+        : decision.reasons.map((reason) => reason.message),
       permissionDecision: toPermissionDecisionRecord(decision, "agent-service"),
     };
   }

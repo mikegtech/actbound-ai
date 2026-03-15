@@ -53,9 +53,37 @@ Authorized to Act: AI Agents with Auth0
 
 ### Phase 1 - Foundation and Permission-Centric Scaffold
 
+Status: done
+
+GitHub local and pipeline security hardening is complete. Local git hooks (pre-commit, pre-push), CI workflows (lint, build, typecheck, secret scanning, CodeQL, Semgrep, dependency review, actionlint), supply-chain pinning, CODEOWNERS, and security documentation are in place. Branch protection and GitHub-level settings remain manual post-deploy items.
+
+### Phase 2 - Central Permission System
+
 Status: in-progress
 
-### Goals
+## Current Focus
+
+- Make `packages/authorization` the typed source of truth for resources, actions, scopes, decision reasons, and policy evaluation
+- Back orchestrator permission endpoints with the real policy engine instead of placeholder strings
+- Re-enforce protected placeholder operations in `agent-service` using the same package-level policy engine
+- Expose structured permission decisions and permission context summaries through the shared SDK and into the web UI
+
+## Definition of Done - Phase 2
+
+- `packages/authorization` owns typed actor, subject, resource, scope, context, decision, and decision-reason models
+- The central policy engine evaluates consent access, Token Vault connection access, agent preview, agent execution, audit viewing, valuations, and listing reads coherently
+- `services/orchestrator-api` returns centralized decisions for `/me/permissions` and preview-style evaluation responses
+- `services/agent-service` independently re-checks protected operations and returns structured allow/deny results
+- `apps/web` renders backend-issued decision reasons without embedding policy rules
+- `docs/permissions.md` and the execution context describe the real Phase 2 model
+
+## Out of Scope for Phase 2
+
+- Final Auth0 Token Vault delegated grant wiring
+- Brokered M2M token optimization and caching
+- Final audit UX, submission polish, and demo packaging
+
+### Phase 1 Goals (Completed)
 
 - Scaffold monorepo
 - Create apps/web
@@ -78,12 +106,12 @@ Status: in-progress
 
 ### EPIC-001 - Foundation Scaffold
 
-Status: in-progress
+Status: done
 Goal: Establish the repo structure, tooling, docs, and baseline apps/services/packages.
 
 ### EPIC-002 - Central Permission System
 
-Status: planned
+Status: in-progress
 Goal: Create typed resources, actions, policy context, and permission decision evaluation.
 
 ### EPIC-003 - Token Broker and M2M Optimization
@@ -113,23 +141,29 @@ Goal: Finalize story, diagrams, README, public branch, demo flow, and Devpost as
 - Project name selected: ActBound AI
 - Elevator pitch drafted
 - Initial architecture direction decided
-- React chosen for web app
-- Orchestrator + service split chosen
-- zod-to-openapi selected for contract generation
+- Monorepo scaffold completed
+- `apps/web`, `services/orchestrator-api`, and `services/agent-service` created
+- `packages/authorization`, `packages/sdk`, `packages/ui`, and `packages/config` created
+- Shared Zod + zod-to-openapi contract foundation implemented
+- Syncpack guard added for workspace dependency consistency
+- Local git hooks: pre-commit (secret scanning, lint, format, hygiene) and pre-push (typecheck)
+- CI workflows: lint/build/typecheck, CodeQL, dependency review, gitleaks, actionlint, Semgrep
+- Supply-chain hardening: third-party actions SHA-pinned, container images versioned, persist-credentials disabled
+- CODEOWNERS for security-sensitive paths
+- Security documentation: local-hooks.md, ci-security.md
+- AI guardrails documented in docs/ai/context.md
 
 ### In Progress
 
-- Monorepo scaffold
-- Repo structure definition
-- AI context setup
+- Phase 2 central permission system
+- Typed policy engine and decision reason model
+- Backend-backed permission decisions for orchestrator and agent-service
 
 ### Next
 
-- Scaffold apps/web
-- Scaffold services/orchestrator-api
-- Scaffold services/agent-service
-- Add packages/authorization and packages/sdk
-- Generate initial shared schemas
+- Token broker and M2M optimization
+- Auth0 Token Vault delegated access wiring
+- Auditability and user control refinement
 
 ## Repo-Wide AI Guardrails
 

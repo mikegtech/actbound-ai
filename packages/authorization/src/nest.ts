@@ -9,13 +9,13 @@ import { Reflector } from "@nestjs/core";
 
 import { evaluatePermission } from "./engine";
 import type { Permission } from "./permissions";
-import type { AuthorizationContext } from "./types";
+import type { AuthorizationContext, AuthorizationDecision } from "./types";
 
 const REQUIRED_PERMISSION_KEY = "actbound:required-permission";
 
 type RequestWithAuthorization = {
   authContext?: AuthorizationContext;
-  permissionDecision?: ReturnType<typeof evaluatePermission>;
+  permissionDecision?: AuthorizationDecision;
 };
 
 export const RequirePermission = (permission: Permission) =>

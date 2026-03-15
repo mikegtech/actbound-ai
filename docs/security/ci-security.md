@@ -39,11 +39,11 @@ Permissions: `contents: read`
 
 Runs on every push to `main` and every PR. Three parallel jobs.
 
-| Job        | Tool                              | What it does                           |
-| ---------- | --------------------------------- | -------------------------------------- |
-| gitleaks   | gitleaks-action v2                | Full-repo secret scan (all history)    |
-| actionlint | actionlint 1.7.7                  | Validates workflow YAML best practices |
-| semgrep    | semgrep (p/default, p/javascript) | Rule-based SAST for JS/TS              |
+| Job        | Tool                              | What it does                           | Pinning                          |
+| ---------- | --------------------------------- | -------------------------------------- | -------------------------------- |
+| gitleaks   | gitleaks-action                   | Full-repo secret scan (all history)    | SHA-pinned (`ff98106...`, v2)    |
+| actionlint | actionlint 1.7.7                  | Validates workflow YAML best practices | Script URL pinned to release SHA |
+| semgrep    | semgrep (p/default, p/javascript) | Rule-based SAST for JS/TS              | Image pinned to `1.155.0`        |
 
 Permissions: `contents: read`
 
@@ -74,6 +74,14 @@ CI runs full-repo checks. This is intentional and different from local hooks.
 - CI checks all files, not just changed files. This catches drift that local hooks miss.
 - CI results are authoritative. If CI passes but a local hook fails (or vice versa), CI is the source of truth for merge eligibility.
 - CI must not be skipped. Branch protection rules should require CI checks to pass before merge.
+
+## Supply-chain controls
+
+- **Third-party actions** (`gitleaks/gitleaks-action`, `pnpm/action-setup`) are pinned to full commit SHAs with a version comment. Update SHAs when upgrading.
+- **GitHub-owned actions** (`actions/checkout`, `actions/setup-node`, `github/codeql-action`, `actions/dependency-review-action`) use version tags (`@v4`, `@v3`). This is an acceptable tradeoff: GitHub-owned actions have strong provenance guarantees, and SHA-pinning them creates high maintenance burden with minimal security gain.
+- **Container images** (`semgrep/semgrep`) are pinned to a versioned tag. Update periodically.
+- **External scripts** (actionlint installer) are fetched from a SHA-pinned URL, not from `main`.
+- **All checkout steps** set `persist-credentials: false` to avoid leaking tokens to subsequent steps.
 
 ## What CI should never do
 
@@ -118,8 +126,34 @@ Enable these on `main`:
 | Dependabot security updates     | Enabled               |
 | Private vulnerability reporting | Enabled (when public) |
 
+## Post-deploy checklist (manual GitHub settings)
+
+After the first successful CI run, apply these settings in the GitHub UI.
+
+### Branch protection (`main`)
+
+- [ ] Require pull request reviews (1+ approvals)
+- [ ] Require status checks to pass: Quality, Secret Scanning, Workflow Linting, Semgrep SAST, CodeQL Analysis
+- [ ] Require branches to be up to date before merging
+- [ ] Restrict push access to maintainers only
+- [ ] Block force pushes
+- [ ] Block branch deletions
+- [ ] Optional: require signed commits
+
+### Code security (Settings > Code security and analysis)
+
+- [ ] Enable secret scanning
+- [ ] Enable push protection
+- [ ] Enable Dependabot alerts
+- [ ] Enable Dependabot security updates
+- [ ] Enable private vulnerability reporting (when repo is public)
+
+### CODEOWNERS
+
+- [ ] Verify `.github/CODEOWNERS` owners match the team structure
+- [ ] Enable "Require review from Code Owners" in branch protection
+
 ## Deferred items
 
-- [ ] Test suite CI gate (enable `pnpm test` step when tests exist)
-- [ ] Branch protection rules (apply after first successful CI run)
-- [ ] SARIF upload for semgrep (if GitHub Security tab integration is desired)
+- [ ] Test suite CI gate (enable `pnpm test` step in ci.yml and add to required status checks)
+- [ ] SARIF upload for semgrep (if GitHub Security tab aggregation is desired)

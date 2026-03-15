@@ -22,11 +22,23 @@ export class ListingsController {
   ) {
     const authContext = request.authContext;
     const decision = authContext
-      ? evaluatePermission(authContext, "listings:read")
+      ? evaluatePermission(authContext, "listings:read", {
+          type: "listing",
+          id: params.id,
+          ownerSubjectId: authContext.subject.id,
+        })
       : {
           permission: "listings:read" as const,
+          resource: "listing" as const,
+          action: "read" as const,
+          resourceId: params.id,
           allowed: false,
-          reasons: ["Authorization context missing in agent-service."],
+          reasons: [
+            {
+              code: "authorization_context_missing" as const,
+              message: "Authorization context missing in agent-service.",
+            },
+          ],
         };
 
     if (!decision.allowed) {

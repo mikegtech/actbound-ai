@@ -1,0 +1,23 @@
+# Security-sensitive paths require review from a maintainer.
+# Update this file when team members or ownership changes.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# CI/CD and workflow files
+.github/workflows/** @mikegtech
+.github/CODEOWNERS @mikegtech
+
+# Secret scanning and hook configuration
+.gitleaks.toml @mikegtech
+.pre-commit-config.yaml @mikegtech
+
+# Git ignore rules (controls what can be committed)
+.gitignore @mikegtech
+
+# Security documentation
+docs/security/** @mikegtech
+
+# AI agent operating instructions
+docs/ai/** @mikegtech
+.github/agents/** @mikegtech
+.claude/** @mikegtech

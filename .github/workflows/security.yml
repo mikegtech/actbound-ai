@@ -16,9 +16,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -27,10 +28,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
+      # Script URL pinned to the v1.7.7 release commit to avoid mutable main-branch fetch.
       - name: Download actionlint
-        id: get-actionlint
-        run: bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.7
+        run: bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/03d0035246f3e81f36aed592ffb4bebf33a03106/scripts/download-actionlint.bash) 1.7.7
         shell: bash
 
       - name: Run actionlint
@@ -41,9 +44,12 @@ jobs:
     name: Semgrep SAST
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep
+      # Pin to a versioned tag. Update periodically with: gh api repos/semgrep/semgrep/releases/latest --jq '.tag_name'
+      image: semgrep/semgrep:1.155.0
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Run Semgrep
         run: semgrep scan --config p/default --config p/javascript --error --quiet
