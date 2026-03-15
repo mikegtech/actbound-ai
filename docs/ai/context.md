@@ -131,6 +131,63 @@ Goal: Finalize story, diagrams, README, public branch, demo flow, and Devpost as
 - Add packages/authorization and packages/sdk
 - Generate initial shared schemas
 
+## Repo-Wide AI Guardrails
+
+These rules apply to every AI agent and tool operating in this repo.
+
+### 1. No repo-wide write commands without explicit approval
+
+Never run `prettier --write .`, `eslint --fix .`, or any command that reformats or rewrites files across the entire repo. Only use these commands on explicitly named files within the current task scope.
+
+Acceptable:
+
+```bash
+pnpm exec prettier --write apps/web/src/App.tsx
+pnpm exec eslint --fix services/orchestrator-api/src/routes/health.ts
+```
+
+Not acceptable without explicit human approval:
+
+```bash
+pnpm exec prettier --write .
+pnpm exec eslint --fix .
+```
+
+### 2. Only modify files in the current task scope
+
+Do not touch files outside the scope of the task you were given. If a hook or tool reports issues in unrelated files, report the issue — do not fix it unless asked.
+
+### 3. Hooks operate on staged or targeted files
+
+Local git hooks (pre-commit, pre-push) must run against staged files or explicitly targeted files only. They must not trigger repo-wide scans or rewrites during normal development.
+
+### 4. Local hooks are fast scoped checks; CI is the authority
+
+Local hooks are the first line of defense. They catch obvious issues early and keep the developer workflow fast. CI is the authoritative full-repo enforcement layer. Do not add checks to local hooks that belong in CI.
+
+### 5. No reformatting unrelated files to pass a commit
+
+If committing your changes causes a hook failure in unrelated files (docs, config, lockfiles, agent files, etc.), do not reformat or rewrite those files to make the hook pass. Instead:
+
+- Ensure the hook is scoped to staged files only
+- If the hook is correctly scoped and the failure is in a file you changed, fix it
+- If the failure is in a file you did not change, stop and report
+
+### 6. Stop and report on broad failures
+
+If a hook failure would require changing files outside your task scope, stop and report the issue to the developer. Do not apply broad fixes. Explain what failed, which files are affected, and what the developer should decide.
+
+### 7. Public-branch hygiene and secret prevention are mandatory
+
+This repo will become public. Every commit must be clean of:
+
+- secrets, tokens, API keys, credentials
+- .env files (except .env.example)
+- private keys and certificates
+- internal-only endpoints or references
+
+These controls are non-negotiable and enforced at every layer (local hooks, CI, GitHub settings).
+
 ## Implementation Guidance for AI Coding Tools
 
 - Prefer TypeScript

@@ -25,6 +25,15 @@ pre-commit install && pre-commit install --hook-type pre-push
 pre-commit run --all-files
 ```
 
+## Scoping policy
+
+Local hooks enforce a **staged-files-only** policy. This is deliberate.
+
+- Hooks check only what you are committing, not the entire repo.
+- If a hook fails on a file you did not change, something is misconfigured — report it, do not bulk-fix unrelated files.
+- Never run `prettier --write .` or `eslint --fix .` just to pass a commit. Fix only the files you changed.
+- CI is the authoritative full-repo enforcement layer. Local hooks are a fast first pass.
+
 ## What runs on commit
 
 These hooks run against **staged files only** and are designed to complete in seconds.
@@ -96,14 +105,13 @@ Checking formatting...
 [warn] apps/web/src/App.tsx
 ```
 
-**Fix:**
+**Fix:** Format only the file(s) that failed — not the whole repo.
 
 ```bash
 pnpm exec prettier --write <file>
-
-# Or format all files
-pnpm exec prettier --write .
 ```
+
+Do **not** run `prettier --write .` to fix a single file. If multiple unrelated files fail, that indicates a repo-wide formatting issue that should be addressed as a separate task.
 
 ### eslint: lint error
 

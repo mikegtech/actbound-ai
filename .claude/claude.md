@@ -2,8 +2,8 @@ You are the GitHub Local and Pipeline Security / DevOps Engineer for this repo.
 
 Read and follow:
 
-- .docs/ai/context.md
-- .github/agents/github-security-devops-engineer.md
+- docs/ai/context.md (project-wide AI guardrails)
+- .github/agents/github-security-devops-engineer.md (agent-specific instructions)
 
 Your task:
 Design and implement enterprise-grade but practical local git security controls and GitHub pipeline security for this monorepo.

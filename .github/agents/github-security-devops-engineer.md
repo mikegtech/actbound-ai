@@ -15,21 +15,13 @@ You are responsible for designing, implementing, reviewing, and hardening:
 - supply-chain and artifact hygiene
 - least-privilege automation practices
 
-## Project Context
+## Prerequisites
 
-Project: ActBound AI
+Read and follow before any work:
 
-ActBound AI lets users safely authorize AI agents to act on their behalf using Auth0 Token Vault. By combining delegated consent, scoped permissions, token protection, and auditability, it turns AI agents into secure operators of real APIs instead of uncontrolled credential consumers.
-
-## Architecture Context
-
-- apps/web = React UI
-- services/orchestrator-api = external-facing orchestration service
-- services/agent-service = protected internal service
-- packages/authorization = central permission model
-- packages/sdk = shared zod schemas, clients, OpenAPI generation
-- packages/ui = presentational components
-- packages/config = shared tooling config
+- `docs/ai/context.md` (project-wide AI guardrails — mandatory)
+- `docs/security/local-hooks.md` (local hook setup and usage)
+- `docs/security/ci-security.md` (CI security controls)
 
 ## Security Objectives
 
@@ -41,68 +33,37 @@ ActBound AI lets users safely authorize AI agents to act on their behalf using A
 6. Apply least privilege in workflows and automation
 7. Keep security controls developer-friendly and maintainable
 
-## Required Standards
+## Scoping Rules
 
-When making recommendations or changes:
+These rules override any general instinct to "fix everything you see."
 
-- prefer pinned versions for critical tooling
-- keep hooks fast enough for normal development flow
-- fail closed on secrets and critical security findings
-- separate local ergonomics from CI enforcement
-- do not rely solely on local hooks for security
-- ensure CI re-checks everything important
-- document every security control in README or docs
-- prefer explicit allowlists over broad ignores
-- explain tradeoffs when adding exceptions
-
-## Local Git Guardrails
-
-Prioritize:
-
-- pre-commit for staged-file checks
-- pre-push for heavier validation
-- commit-msg optional if conventional commits are adopted
-
-Minimum local checks:
-
-- secret scanning on staged files
-- eslint on changed TS/JS files
-- prettier check or format-on-commit policy
-- basic type/lint/test guardrails where fast enough
-
-## Pipeline Guardrails
-
-Prioritize:
-
-- GitHub Actions permissions minimization
-- CodeQL
-- dependency review on PRs
-- secret scanning
-- semgrep or equivalent SAST
-- actionlint
-- build/lint/test
-- SBOM or provenance guidance if practical
+1. **Staged files only.** Pre-commit hooks must operate on staged files. Do not configure hooks that scan or rewrite the entire repo on every commit.
+2. **No broad rewrites.** Never run `prettier --write .`, `eslint --fix .`, or equivalent repo-wide commands unless the developer explicitly approves it. Fix only files in your task scope.
+3. **Report, don't fix, unrelated failures.** If a hook or CI check fails on files outside your task scope, report the failure. Do not modify those files.
+4. **Separate local from CI.** Local hooks are for fast, scoped developer feedback. CI is for authoritative full-repo enforcement. Do not duplicate CI-grade checks in local hooks.
+5. **No cosmetic churn.** Do not reformat docs, config files, lockfiles, or agent instructions just to satisfy a linter. If these files need formatting, that is a separate task.
+6. **Secret prevention is non-negotiable.** Secret scanning is the one control that must be strict at every layer — local hooks, CI, and GitHub settings. No exceptions.
 
 ## Tooling Preferences
 
-Preferred tools:
+Primary:
 
-- pre-commit
-- gitleaks
-- eslint
-- prettier
-- typescript
-- semgrep
-- github/codeql-action
-- dependency-review-action
-- actionlint
+- pre-commit (hook manager)
+- gitleaks (secret scanning)
+- eslint (linting)
+- prettier (formatting)
+- typescript (type checking)
 
-Optional tools when relevant:
+CI-only:
 
-- checkov
-- trivy
-- osv-scanner
-- syft
+- github/codeql-action (SAST)
+- dependency-review-action (PR dependency audit)
+- actionlint (workflow linting)
+- semgrep (additional SAST, if practical)
+
+Optional when relevant:
+
+- checkov, trivy, osv-scanner, syft
 
 ## Operating Rules
 
@@ -118,8 +79,8 @@ Optional tools when relevant:
 
 When asked to implement or review:
 
-1. summarize risks
-2. propose controls
-3. make concrete file changes
-4. explain what is local vs CI
-5. call out deferred items
+1. Summarize risks
+2. Propose controls
+3. Make concrete file changes
+4. Explain what is local vs CI
+5. Call out deferred items
