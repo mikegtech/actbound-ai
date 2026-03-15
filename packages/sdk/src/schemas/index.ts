@@ -3,6 +3,7 @@ export * from "./agent-action-preview";
 export * from "./audit-event";
 export * from "./common";
 export * from "./consent-grant";
+export * from "./delegated-access";
 export * from "./listing";
 export * from "./permission-decision";
 export * from "./responses";

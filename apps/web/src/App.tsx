@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import type {
   AgentActionExecuteResult,
   AgentActionPreviewResult,
   BrokeredTokenResponse,
+  ConsentPreviewResult,
+  ConsentSummary,
   PermissionContextSummary,
   PermissionDecisionRecord,
+  ProviderConnection,
   ScopedTokenRequest,
   TokenBrokerPreviewResult,
   TokenBrokerStatus,
   TokenCacheSummary,
-  VaultConnection,
+  VaultSession,
 } from "@actbound/sdk";
 import { OrchestratorApiClient } from "@actbound/sdk";
 import { Panel, PermissionDecisionList, StatusPill } from "@actbound/ui";
@@ -22,7 +25,13 @@ export function App() {
   const [permissionContext, setPermissionContext] =
     useState<PermissionContextSummary | null>(null);
   const [decisions, setDecisions] = useState<PermissionDecisionRecord[]>([]);
-  const [connections, setConnections] = useState<VaultConnection[]>([]);
+  const [providerConnections, setProviderConnections] = useState<
+    ProviderConnection[]
+  >([]);
+  const [consents, setConsents] = useState<ConsentSummary[]>([]);
+  const [vaultSessions, setVaultSessions] = useState<VaultSession[]>([]);
+  const [consentPreview, setConsentPreview] =
+    useState<ConsentPreviewResult | null>(null);
   const [previewResult, setPreviewResult] =
     useState<AgentActionPreviewResult | null>(null);
   const [executeResult, setExecuteResult] =
@@ -35,63 +44,66 @@ export function App() {
     useState<TokenBrokerPreviewResult | null>(null);
   const [brokeredToken, setBrokeredToken] =
     useState<BrokeredTokenResponse | null>(null);
+  const [delegatedFeedback, setDelegatedFeedback] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    let active = true;
+  const loadDashboard = useEffectEvent(async () => {
+    setIsLoading(true);
+    setError("");
 
-    async function load() {
-      setIsLoading(true);
-      setError("");
+    try {
+      const [
+        permissionResponse,
+        providerConnectionResponse,
+        consentResponse,
+        vaultSessionResponse,
+        brokerStatusResponse,
+        brokerCacheResponse,
+      ] = await Promise.all([
+        orchestratorClient.getMePermissions(),
+        orchestratorClient.getConnections(),
+        orchestratorClient.getConsents(),
+        orchestratorClient.getVaultSessions(),
+        orchestratorClient.getTokenBrokerStatus(),
+        orchestratorClient.getTokenBrokerCache(),
+      ]);
 
-      try {
-        const [
-          permissionResponse,
-          connectionResponse,
-          brokerStatusResponse,
-          brokerCacheResponse,
-        ] = await Promise.all([
-          orchestratorClient.getMePermissions(),
-          orchestratorClient.getMeConnections(),
-          orchestratorClient.getTokenBrokerStatus(),
-          orchestratorClient.getTokenBrokerCache(),
-        ]);
-
-        if (!active) {
-          return;
-        }
-
-        setPermissionContext(permissionResponse.context);
-        setDecisions(permissionResponse.decisions);
-        setConnections(connectionResponse.connections);
-        setTokenBrokerStatus(brokerStatusResponse);
-        setTokenCacheSummary(brokerCacheResponse);
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Unable to reach the orchestrator API.",
-        );
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
+      setPermissionContext(permissionResponse.context);
+      setDecisions(permissionResponse.decisions);
+      setProviderConnections(providerConnectionResponse.connections);
+      setConsents(consentResponse.consents);
+      setVaultSessions(vaultSessionResponse.sessions);
+      setTokenBrokerStatus(brokerStatusResponse);
+      setTokenCacheSummary(brokerCacheResponse);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Unable to reach the orchestrator API.",
+      );
+    } finally {
+      setIsLoading(false);
     }
+  });
 
-    void load();
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const selectedConnectionId = connections[0]?.id ?? "conn_demo_vault";
+  const selectedConnection = providerConnections[0];
+  const selectedConsent =
+    consents.find(
+      (consent) => consent.connectionId === selectedConnection?.id,
+    ) ?? consents[0];
+  const selectedVaultSession =
+    vaultSessions.find(
+      (session) => session.connectionId === selectedConnection?.id,
+    ) ?? vaultSessions[0];
+  const selectedConnectionId =
+    selectedConnection?.id ??
+    permissionContext?.providerConnection.connectionId ??
+    "conn_demo_salesforce";
 
   const previewDecision = decisions.find(
     (decision) => decision.permission === "agent_actions:preview",
@@ -99,10 +111,6 @@ export function App() {
   const executeDecision = decisions.find(
     (decision) => decision.permission === "agent_actions:execute",
   );
-  const actionAvailability = {
-    canPreview: previewDecision?.allowed ?? false,
-    canExecute: executeDecision?.allowed ?? false,
-  };
   const tokenBrokerReadDecision = decisions.find(
     (decision) => decision.permission === "brokered_tokens:read",
   );
@@ -118,29 +126,33 @@ export function App() {
   const tokenCacheInspectDecision = decisions.find(
     (decision) => decision.permission === "token_cache:inspect",
   );
+  const connectDecision = decisions.find(
+    (decision) => decision.permission === "provider_connections:connect",
+  );
+  const revokeDecision = decisions.find(
+    (decision) => decision.permission === "provider_connections:revoke",
+  );
+  const consentPreviewDecision = decisions.find(
+    (decision) => decision.permission === "delegated_grants:preview",
+  );
+  const sensitiveActionDecision = decisions.find(
+    (decision) => decision.permission === "sensitive_actions:execute",
+  );
 
   function buildBrokerRequest(): ScopedTokenRequest {
     return {
       audience: permissionContext?.attributes.tokenAudience ?? "agent-service",
       scopes: ["valuations.execute"],
-      purpose: "Broker a valuation token for a protected placeholder flow",
-      intent:
-        permissionContext?.consent.status === "granted" ? "delegated" : "m2m",
+      purpose:
+        "Broker a delegated valuation token for a protected placeholder flow",
+      intent: selectedConsent?.status === "granted" ? "delegated" : "m2m",
       actorId: permissionContext?.actor.id,
       subjectId: permissionContext?.subject.id,
       connectionId: selectedConnectionId,
-      consentGrantId: permissionContext?.consent.grantId,
+      consentGrantId: selectedConsent?.id ?? permissionContext?.consent.grantId,
+      sensitiveActionClassification:
+        consentPreview?.consent.sensitiveActionClassification ?? "sensitive",
     };
-  }
-
-  async function refreshTokenBrokerPanels() {
-    const [brokerStatusResponse, brokerCacheResponse] = await Promise.all([
-      orchestratorClient.getTokenBrokerStatus(),
-      orchestratorClient.getTokenBrokerCache(),
-    ]);
-
-    setTokenBrokerStatus(brokerStatusResponse);
-    setTokenCacheSummary(brokerCacheResponse);
   }
 
   async function handlePreview() {
@@ -152,7 +164,8 @@ export function App() {
       const result = await orchestratorClient.previewAgentAction({
         action: "valuation.reconcile",
         connectionId: selectedConnectionId,
-        consentGrantId: permissionContext?.consent.grantId,
+        consentGrantId:
+          selectedConsent?.id ?? permissionContext?.consent.grantId,
         payload: {
           listingId: "listing_demo_001",
         },
@@ -177,7 +190,8 @@ export function App() {
       const result = await orchestratorClient.executeAgentAction({
         action: "valuation.reconcile",
         connectionId: selectedConnectionId,
-        consentGrantId: permissionContext?.consent.grantId,
+        consentGrantId:
+          selectedConsent?.id ?? permissionContext?.consent.grantId,
         payload: {
           listingId: "listing_demo_001",
         },
@@ -189,6 +203,92 @@ export function App() {
         requestError instanceof Error
           ? requestError.message
           : "Unable to execute agent action.",
+      );
+    }
+  }
+
+  async function handleConnectProvider() {
+    setDelegatedFeedback("");
+    setError("");
+
+    try {
+      const result = await orchestratorClient.connectProvider({
+        provider: "salesforce",
+        accountLabel: "Acme Realty CRM",
+        requestedScopes: [
+          "agent.preview",
+          "agent.execute",
+          "tokens.delegated",
+          "sensitive.execute",
+        ],
+        purpose: "Enable delegated CRM workflows for ActBound AI",
+        sensitiveActionClassification: "sensitive",
+      });
+
+      setDelegatedFeedback(result.summary);
+      await loadDashboard();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to create the provider connection placeholder.",
+      );
+    }
+  }
+
+  async function handleRevokeConnection() {
+    if (!selectedConnection) {
+      return;
+    }
+
+    setDelegatedFeedback("");
+    setError("");
+
+    try {
+      const result = await orchestratorClient.revokeConnection(
+        selectedConnection.id,
+        {
+          reason:
+            "User requested delegated-access disconnect from the demo UI.",
+          revokeGrants: true,
+        },
+      );
+
+      setDelegatedFeedback(result.summary);
+      await loadDashboard();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to revoke delegated access.",
+      );
+    }
+  }
+
+  async function handleConsentPreview() {
+    setConsentPreview(null);
+    setDelegatedFeedback("");
+    setError("");
+
+    try {
+      const result = await orchestratorClient.previewConsent({
+        provider: selectedConnection?.provider ?? "salesforce",
+        connectionId: selectedConnection?.id,
+        requestedScopes: [
+          "agent.execute",
+          "tokens.delegated",
+          "sensitive.execute",
+        ],
+        actionLabel: "valuation.reconcile",
+        sensitiveActionClassification: "sensitive",
+      });
+
+      setConsentPreview(result);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to preview delegated consent.",
       );
     }
   }
@@ -222,7 +322,7 @@ export function App() {
         await orchestratorClient.retrieveBrokeredToken(buildBrokerRequest());
 
       setBrokeredToken(result);
-      await refreshTokenBrokerPanels();
+      await loadDashboard();
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -236,18 +336,29 @@ export function App() {
     <main className="app-shell">
       <section className="hero">
         <p className="hero__eyebrow">ActBound AI</p>
-        <h1>Backend-issued permissions drive the UI.</h1>
+        <h1>Delegated access stays backend-issued and inspectable.</h1>
         <p className="hero__copy">
-          The web app reads permission decisions from the orchestrator service,
-          shows connection state, and only enables actions that the backend
-          already resolved.
+          The orchestrator resolves connection state, consent summaries, vault
+          session metadata, and token-broker responses. The UI only renders what
+          the backend already decided.
         </p>
         <div className="hero__status-row">
           <StatusPill tone={isLoading ? "neutral" : "success"}>
             {isLoading ? "Loading decisions" : "Permissions loaded"}
           </StatusPill>
-          <StatusPill tone={connections.length > 0 ? "success" : "warning"}>
-            {connections.length > 0 ? "Vault connected" : "No connections"}
+          <StatusPill
+            tone={providerConnections.length > 0 ? "success" : "warning"}
+          >
+            {providerConnections.length > 0
+              ? "Delegated provider connected"
+              : "No delegated provider"}
+          </StatusPill>
+          <StatusPill
+            tone={consentPreview?.stepUpRequired ? "warning" : "neutral"}
+          >
+            {consentPreview?.stepUpRequired
+              ? "Step-up preview required"
+              : "Step-up preview idle"}
           </StatusPill>
         </div>
       </section>
@@ -295,11 +406,20 @@ export function App() {
                 </p>
               </div>
               <div className="context-card">
-                <strong>Token Vault</strong>
-                <p>{permissionContext.tokenVaultConnection.status}</p>
+                <strong>Provider connection</strong>
+                <p>{permissionContext.providerConnection.status}</p>
                 <p>
-                  {permissionContext.tokenVaultConnection.scopes.join(", ") ||
-                    "No scopes"}
+                  {permissionContext.providerConnection.provider ??
+                    "Provider pending"}
+                </p>
+              </div>
+              <div className="context-card">
+                <strong>Vault session</strong>
+                <p>{permissionContext.vaultSession.status}</p>
+                <p>
+                  {permissionContext.attributes.stepUpSatisfied
+                    ? "Step-up satisfied"
+                    : "Step-up not satisfied"}
                 </p>
               </div>
             </div>
@@ -310,35 +430,177 @@ export function App() {
           )}
         </Panel>
 
-        <Panel eyebrow="Connections" title="Consent and vault context">
-          <div className="connection-list">
-            {connections.map((connection) => (
-              <article key={connection.id} className="connection-card">
-                <div className="connection-card__header">
-                  <strong>{connection.accountLabel}</strong>
-                  <StatusPill
-                    tone={
-                      connection.status === "connected" ? "success" : "warning"
-                    }
-                  >
-                    {connection.status}
-                  </StatusPill>
-                </div>
-                <p>{connection.provider}</p>
-                <p className="connection-card__scopes">
-                  {connection.scopes.join(", ")}
-                </p>
-              </article>
-            ))}
-            {connections.length === 0 ? (
-              <p className="empty-state">
-                No backend connection data available yet.
-              </p>
-            ) : null}
+        <Panel
+          eyebrow="Delegated Access"
+          title="Connected accounts and consent"
+        >
+          <div className="hero__status-row">
+            <StatusPill tone={connectDecision?.allowed ? "success" : "warning"}>
+              {connectDecision?.allowed
+                ? "Connect allowed"
+                : "Connect restricted"}
+            </StatusPill>
+            <StatusPill
+              tone={consentPreviewDecision?.allowed ? "success" : "warning"}
+            >
+              {consentPreviewDecision?.allowed
+                ? "Consent preview allowed"
+                : "Consent preview restricted"}
+            </StatusPill>
+            <StatusPill tone={revokeDecision?.allowed ? "success" : "warning"}>
+              {revokeDecision?.allowed ? "Revoke allowed" : "Revoke restricted"}
+            </StatusPill>
           </div>
+
+          <div className="action-stack">
+            <button
+              disabled={!(connectDecision?.allowed ?? false)}
+              onClick={() => void handleConnectProvider()}
+              type="button"
+            >
+              Connect provider placeholder
+            </button>
+            <button
+              disabled={!(consentPreviewDecision?.allowed ?? false)}
+              onClick={() => void handleConsentPreview()}
+              type="button"
+            >
+              Preview consent and step-up
+            </button>
+            <button
+              disabled={
+                !(revokeDecision?.allowed ?? false) || !selectedConnection
+              }
+              onClick={() => void handleRevokeConnection()}
+              type="button"
+            >
+              Revoke access placeholder
+            </button>
+          </div>
+
+          {delegatedFeedback ? (
+            <p className="feedback">{delegatedFeedback}</p>
+          ) : null}
+
+          <div className="subpanel-grid">
+            <section className="subpanel">
+              <h3>Providers</h3>
+              <div className="connection-list">
+                {providerConnections.map((connection) => (
+                  <article key={connection.id} className="connection-card">
+                    <div className="connection-card__header">
+                      <strong>{connection.accountLabel}</strong>
+                      <StatusPill
+                        tone={
+                          connection.status === "connected"
+                            ? "success"
+                            : "warning"
+                        }
+                      >
+                        {connection.status}
+                      </StatusPill>
+                    </div>
+                    <p>{connection.provider}</p>
+                    <p>lifecycle {connection.grantLifecycleState}</p>
+                    <p className="connection-card__scopes">
+                      {connection.grantedScopes.join(", ")}
+                    </p>
+                  </article>
+                ))}
+                {providerConnections.length === 0 ? (
+                  <p className="empty-state">
+                    No delegated provider connections are currently available.
+                  </p>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="subpanel">
+              <h3>Consents</h3>
+              <div className="connection-list">
+                {consents.map((consent) => (
+                  <article key={consent.id} className="connection-card">
+                    <div className="connection-card__header">
+                      <strong>{consent.provider}</strong>
+                      <StatusPill
+                        tone={
+                          consent.status === "granted" ? "success" : "warning"
+                        }
+                      >
+                        {consent.status}
+                      </StatusPill>
+                    </div>
+                    <p>{consent.summary}</p>
+                    <p className="connection-card__scopes">
+                      {consent.scopes.join(", ")}
+                    </p>
+                  </article>
+                ))}
+                {consents.length === 0 ? (
+                  <p className="empty-state">
+                    No delegated consent summaries are available yet.
+                  </p>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="subpanel">
+              <h3>Vault sessions</h3>
+              <div className="connection-list">
+                {vaultSessions.map((session) => (
+                  <article key={session.id} className="connection-card">
+                    <div className="connection-card__header">
+                      <strong>{session.provider}</strong>
+                      <StatusPill
+                        tone={
+                          session.status === "active" ? "success" : "warning"
+                        }
+                      >
+                        {session.status}
+                      </StatusPill>
+                    </div>
+                    <p>{session.tokenReference}</p>
+                    <p className="connection-card__scopes">
+                      {session.scopes.join(", ")}
+                    </p>
+                  </article>
+                ))}
+                {vaultSessions.length === 0 ? (
+                  <p className="empty-state">
+                    No delegated vault sessions are available yet.
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          </div>
+
+          {consentPreview ? (
+            <div className="feedback-block">
+              <p className="feedback">{consentPreview.summary}</p>
+              <p className="feedback feedback--muted">
+                consent {consentPreview.consent.status} / step-up{" "}
+                {consentPreview.stepUpRequired ? "required" : "not required"} /
+                classification{" "}
+                {consentPreview.consent.sensitiveActionClassification}
+              </p>
+              <p className="feedback feedback--muted">
+                {consentPreview.sensitiveActionDecision?.reasons
+                  .map((reason) => `${reason.code}: ${reason.message}`)
+                  .join(" ")}
+              </p>
+            </div>
+          ) : (
+            <p className="empty-state">
+              Run the consent preview to inspect delegated grant shape and
+              step-up requirements for a sensitive action.
+            </p>
+          )}
         </Panel>
 
-        <Panel eyebrow="Token Broker" title="Cache-first token broker">
+        <Panel
+          eyebrow="Token Broker"
+          title="Cache-first broker with delegated context"
+        >
           <div className="hero__status-row">
             <StatusPill
               tone={
@@ -357,6 +619,13 @@ export function App() {
               {tokenCacheInspectDecision?.allowed
                 ? "Cache inspection allowed"
                 : "Cache inspection restricted"}
+            </StatusPill>
+            <StatusPill
+              tone={sensitiveActionDecision?.allowed ? "success" : "warning"}
+            >
+              {sensitiveActionDecision?.allowed
+                ? "Sensitive execution allowed"
+                : "Sensitive execution gated"}
             </StatusPill>
           </div>
 
@@ -380,9 +649,11 @@ export function App() {
                 </p>
               </div>
               <div className="context-card">
-                <strong>Supported intents</strong>
-                <p>{tokenBrokerStatus.supportedIntents.join(", ")}</p>
+                <strong>Delegated path</strong>
                 <p>{tokenBrokerStatus.integrations.delegated}</p>
+                <p>
+                  {selectedVaultSession?.tokenReference ?? "No vault session"}
+                </p>
               </div>
             </div>
           ) : (
@@ -422,6 +693,13 @@ export function App() {
                 {tokenPreview.cache.backend} / permission{" "}
                 {tokenPreview.permissionDecision.permission}
               </p>
+              <p className="feedback feedback--muted">
+                step-up{" "}
+                {tokenPreview.stepUpRequired
+                  ? "required later"
+                  : "not required"}{" "}
+                / intent {tokenPreview.request.intent}
+              </p>
             </div>
           ) : null}
 
@@ -436,9 +714,16 @@ export function App() {
                 </StatusPill>
               </div>
               <p>Source type: {brokeredToken.metadata.sourceType}</p>
+              <p>Provider: {brokeredToken.metadata.provider ?? "m2m path"}</p>
               <p>Audience: {brokeredToken.metadata.audience}</p>
               <p className="connection-card__scopes">
                 {brokeredToken.metadata.scopes.join(", ")}
+              </p>
+              <p>
+                Session:{" "}
+                {brokeredToken.metadata.vaultSessionId ??
+                  brokeredToken.metadata.vaultTokenReference ??
+                  "No delegated vault session"}
               </p>
               <p>
                 Expires:{" "}
@@ -457,13 +742,13 @@ export function App() {
                       {entry.hitCount} hits
                     </StatusPill>
                   </div>
-                  <p>{entry.audience}</p>
+                  <p>{entry.provider ?? entry.audience}</p>
                   <p className="connection-card__scopes">
                     {entry.scopes.join(", ")}
                   </p>
                   <p>
-                    intent {entry.intent} / expires{" "}
-                    {new Date(entry.expiresAt).toLocaleString()}
+                    intent {entry.intent} / classification{" "}
+                    {entry.sensitiveActionClassification ?? "routine"}
                   </p>
                 </article>
               ))}
@@ -478,14 +763,14 @@ export function App() {
         <Panel eyebrow="Actions" title="Operator workflow">
           <div className="action-stack">
             <button
-              disabled={!actionAvailability.canPreview}
+              disabled={!(previewDecision?.allowed ?? false)}
               onClick={() => void handlePreview()}
               type="button"
             >
               Preview agent action
             </button>
             <button
-              disabled={!actionAvailability.canExecute}
+              disabled={!(executeDecision?.allowed ?? false)}
               onClick={() => void handleExecute()}
               type="button"
             >

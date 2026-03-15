@@ -108,6 +108,31 @@ button:disabled {
   gap: 0.85rem;
 }
 
+.context-grid,
+.subpanel-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.context-card,
+.subpanel {
+  background: #fffdf9;
+  border: 1px solid rgba(19, 48, 70, 0.1);
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+}
+
+.context-card p,
+.subpanel h3 {
+  margin: 0.3rem 0 0;
+}
+
+.subpanel h3 {
+  color: #17344c;
+  margin-bottom: 0.8rem;
+}
+
 .connection-card {
   background: #fffdf9;
   border: 1px solid rgba(19, 48, 70, 0.1);
@@ -138,6 +163,16 @@ button:disabled {
 
 .feedback--error {
   color: #912e1f;
+}
+
+.feedback--muted {
+  color: #5f7485;
+}
+
+.feedback-block {
+  border-top: 1px solid rgba(19, 48, 70, 0.1);
+  margin-top: 1rem;
+  padding-top: 0.9rem;
 }
 
 .empty-state {

@@ -5,13 +5,23 @@ import {
   AgentActionPreviewResultSchema,
   AuditEventListSchema,
   BrokeredTokenResponseSchema,
+  ConnectionIdParamsSchema,
+  ConnectProviderRequestSchema,
+  ConnectProviderResultSchema,
+  ConsentPreviewRequestSchema,
+  ConsentPreviewResultSchema,
+  ConsentSummaryListSchema,
   HealthStatusSchema,
   PermissionDecisionListSchema,
+  ProviderConnectionListSchema,
+  RevocationIntentSchema,
+  RevokeConnectionResultSchema,
   ScopedTokenRequestSchema,
   TokenBrokerPreviewResultSchema,
   TokenBrokerStatusSchema,
   TokenCacheSummarySchema,
   VaultConnectionListSchema,
+  VaultSessionListSchema,
 } from "../schemas";
 import { ApiClientBase } from "./base";
 
@@ -26,6 +36,49 @@ export class OrchestratorApiClient extends ApiClientBase {
 
   getMeConnections() {
     return this.get("/me/connections", VaultConnectionListSchema);
+  }
+
+  getConnections() {
+    return this.get("/connections", ProviderConnectionListSchema);
+  }
+
+  connectProvider(payload: unknown) {
+    return this.post(
+      "/connections/connect",
+      ConnectProviderRequestSchema,
+      payload,
+      ConnectProviderResultSchema,
+    );
+  }
+
+  revokeConnection(id: string, payload: unknown) {
+    ConnectionIdParamsSchema.parse({
+      id,
+    });
+
+    return this.post(
+      `/connections/${id}/revoke`,
+      RevocationIntentSchema,
+      payload,
+      RevokeConnectionResultSchema,
+    );
+  }
+
+  getConsents() {
+    return this.get("/consents", ConsentSummaryListSchema);
+  }
+
+  previewConsent(payload: unknown) {
+    return this.post(
+      "/consents/preview",
+      ConsentPreviewRequestSchema,
+      payload,
+      ConsentPreviewResultSchema,
+    );
+  }
+
+  getVaultSessions() {
+    return this.get("/vault/sessions", VaultSessionListSchema);
   }
 
   previewAgentAction(payload: unknown) {

@@ -16,6 +16,11 @@ export type PermissionPolicy = {
   requiredConsentScopes?: PermissionScope[];
   requiresTokenVaultConnection?: boolean;
   requiredVaultScopes?: PermissionScope[];
+  requiresProviderConnection?: boolean;
+  requiredProviderScopes?: PermissionScope[];
+  requiresVaultSession?: boolean;
+  requiredVaultSessionScopes?: PermissionScope[];
+  requiresStepUpForSensitiveActions?: boolean;
   requireSubjectOwnership?: boolean;
 };
 
@@ -52,6 +57,54 @@ export const permissionPolicies: Record<Permission, PermissionPolicy> = {
     roles: ["admin", "operator", "viewer"],
     actorTypes: ["user"],
   },
+  "provider_connections:read": {
+    permission: "provider_connections:read",
+    resource: "provider_connection",
+    action: "read",
+    roles: ["admin", "operator", "viewer"],
+    actorTypes: ["user"],
+  },
+  "provider_connections:connect": {
+    permission: "provider_connections:connect",
+    resource: "provider_connection",
+    action: "connect",
+    roles: ["admin", "operator"],
+    actorTypes: ["user"],
+    requireSubjectOwnership: true,
+  },
+  "provider_connections:revoke": {
+    permission: "provider_connections:revoke",
+    resource: "provider_connection",
+    action: "revoke",
+    roles: ["admin", "operator"],
+    actorTypes: ["user"],
+    requiresProviderConnection: true,
+    requireSubjectOwnership: true,
+  },
+  "delegated_grants:read": {
+    permission: "delegated_grants:read",
+    resource: "delegated_grant",
+    action: "read",
+    roles: ["admin", "operator", "viewer"],
+    actorTypes: ["user"],
+    requireSubjectOwnership: true,
+  },
+  "delegated_grants:preview": {
+    permission: "delegated_grants:preview",
+    resource: "consent_record",
+    action: "preview",
+    roles: ["admin", "operator"],
+    actorTypes: ["user"],
+    requireSubjectOwnership: true,
+  },
+  "vault_sessions:read": {
+    permission: "vault_sessions:read",
+    resource: "vault_session",
+    action: "read",
+    roles: ["admin", "operator", "viewer"],
+    actorTypes: ["user"],
+    requireSubjectOwnership: true,
+  },
   "agent_actions:preview": {
     permission: "agent_actions:preview",
     resource: "agent_action",
@@ -74,6 +127,35 @@ export const permissionPolicies: Record<Permission, PermissionPolicy> = {
     requiredConsentScopes: ["agent.execute"],
     requiresTokenVaultConnection: true,
     requiredVaultScopes: ["agent.execute"],
+    requireSubjectOwnership: true,
+  },
+  "sensitive_actions:execute": {
+    permission: "sensitive_actions:execute",
+    resource: "sensitive_action",
+    action: "execute",
+    roles: ["admin", "operator"],
+    actorTypes: ["user"],
+    requiresConsent: true,
+    requiredConsentScopes: [
+      "agent.execute",
+      "tokens.delegated",
+      "sensitive.execute",
+    ],
+    requiresTokenVaultConnection: true,
+    requiredVaultScopes: [
+      "agent.execute",
+      "tokens.delegated",
+      "sensitive.execute",
+    ],
+    requiresProviderConnection: true,
+    requiredProviderScopes: [
+      "agent.execute",
+      "tokens.delegated",
+      "sensitive.execute",
+    ],
+    requiresVaultSession: true,
+    requiredVaultSessionScopes: ["tokens.delegated", "sensitive.execute"],
+    requiresStepUpForSensitiveActions: true,
     requireSubjectOwnership: true,
   },
   "audit_events:read": {
@@ -114,6 +196,10 @@ export const permissionPolicies: Record<Permission, PermissionPolicy> = {
     requiredConsentScopes: ["tokens.delegated"],
     requiresTokenVaultConnection: true,
     requiredVaultScopes: ["tokens.delegated"],
+    requiresProviderConnection: true,
+    requiredProviderScopes: ["tokens.delegated"],
+    requiresVaultSession: true,
+    requiredVaultSessionScopes: ["tokens.delegated"],
     requireSubjectOwnership: true,
   },
   "token_cache:inspect": {

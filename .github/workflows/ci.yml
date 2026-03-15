@@ -46,6 +46,13 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # TODO: Enable when test suite exists and add "Test" to required status checks.
-      # - name: Test
-      #   run: pnpm test
+      - name: Test & Coverage
+        run: pnpm test:coverage
+
+      - name: Upload Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14

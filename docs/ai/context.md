@@ -44,6 +44,15 @@ Authorized to Act: AI Agents with Auth0
 7. Use zod-to-openapi to reduce DTO/OpenAPI duplication
 8. Keep the implementation lightweight and hackathon-friendly, but production-aware
 
+## Architecture Decisions Summary & Boundaries
+
+To ensure the codebase scales cleanly across services without circular dependencies and tight coupling, explicit architectural guardrails are established:
+
+- **Service Architecture Policy (`ADR-004`)**: NestJS backend services follow Hexagonal Architecture (Ports and Adapters) with strictly defined `domain`, `application`, `infrastructure`, and `presentation` directories and boundaries. See `docs/architecture/service-layout.md`.
+- **SDK Boundary Policy (`ADR-004`)**: `packages/sdk` is strictly framework-agnostic. It must have **zero** NestJS imports, **zero** Drizzle imports, and **zero** persistence logic. It acts as the pure host for shared Zod contracts and OpenAPI generation. `packages/authorization` has similar agnostic goals, minus minor NestJS integration seams.
+- **Data Access Policy (`ADR-005`)**: Drizzle ORM and Redis integrations are confined strictly to the `infrastructure` layers of respective backend services. Migrations are owned per-service, not in shared packages.
+- **Frontend Policy (`ADR-004`)**: `apps/web` is React-only and safely consumes typed contracts and clients from `packages/sdk`, avoiding leakage of backend logic.
+
 ## Current Branch
 
 - Working branch: feat/actbound-foundation
@@ -65,29 +74,38 @@ The centralized permission system is complete. `packages/authorization` now owns
 
 ### Phase 3 - Token Broker and M2M Optimization
 
+Status: done
+
+The token broker foundation is complete. `services/orchestrator-api` now exposes broker status, preview, retrieval, and cache-inspection flows, uses Redis with an in-memory fallback, and returns safe token metadata only. Real Auth0 M2M exchange, Token Vault retrieval, and stronger production guardrails remain explicit TODO seams for later phases.
+
+### Phase 4 - Auth0 Token Vault Delegated Access
+
 Status: in-progress
 
 ## Current Focus
 
-- Add a broker foundation in `services/orchestrator-api` that separates token intent shaping, cache lookup, issuance, and safe response shaping
-- Reduce repeated Auth0 M2M demand with cache-first token reuse and explicit broker metadata for demo/debug flows
-- Add shared token broker contracts in `packages/sdk` and wire them into the web UI without exposing raw token material
-- Keep Auth0 client credentials exchange and Auth0 Token Vault delegated retrieval as explicit TODO seams for later phases
+- Add explicit delegated-access models for provider connections, delegated grants, vault sessions, and consent summaries in the shared packages
+- Expose safe placeholder orchestrator endpoints for connections, consent preview, revocation, and vault session inspection without returning secrets
+- Connect delegated-access state to the token broker so delegated requests route through the delegated-access model instead of generic placeholders
+- Keep delegated-access and broker feature logic aligned with the documented service-layer boundaries while staying demo-ready
+- Surface connected accounts, consent state, step-up requirements, and revocation placeholders in the web UI using backend responses only
+- Keep Auth0 Token Vault APIs, delegated OAuth completion, and step-up authentication as explicit TODO seams
 
-## Definition of Done - Phase 3
+## Definition of Done - Phase 4
 
-- `services/orchestrator-api` contains a token broker foundation with preview/status, retrieval, and cache inspection flows
-- The broker uses a cache-first path with Redis when configured and an in-memory fallback for local development
-- `packages/sdk` defines typed broker request, response, cache summary, and safe token metadata schemas
-- `packages/authorization` can evaluate broker access, reuse, delegated token use, and cache inspection decisions
-- `apps/web` renders backend-issued token broker and cache metadata without local policy logic
-- README and broker documentation explain how the broker reduces M2M overuse and where future Auth0 integration will land
+- `docs/ai/context.md` accurately marks Phase 3 complete and Phase 4 in progress
+- Shared delegated-access models exist for provider connections, grants, consent summaries, vault sessions, revocation intent, and sensitive-action markers
+- `services/orchestrator-api` exposes safe placeholder endpoints for connections, consent preview, revocation, and vault sessions
+- `packages/authorization` centrally evaluates delegated access, delegated token usage, revocation, and step-up-sensitive actions
+- The token broker understands delegated-access state and returns safe delegated metadata without exposing raw token material
+- `apps/web` renders backend-issued delegated-access and broker metadata without embedding policy rules
+- README and delegated-access documentation explain the architecture, Token Vault fit, and future Auth0 seams
 
-## Out of Scope for Phase 3
+## Out of Scope for Phase 4
 
-- Real Auth0 client credentials exchange
-- Real Auth0 Token Vault delegated token retrieval
-- Production-grade throttling, backoff, and distributed invalidation
+- Real Auth0 Token Vault API calls and production delegated OAuth completion
+- Production-grade step-up authentication flows
+- Final provider-specific UX, revocation propagation, and long-lived session management
 - Final audit UX, submission polish, and demo packaging
 
 ### Phase 1 Goals (Completed)
@@ -123,12 +141,12 @@ Goal: Create typed resources, actions, policy context, and permission decision e
 
 ### EPIC-003 - Token Broker and M2M Optimization
 
-Status: in-progress
+Status: done
 Goal: Reduce Auth0 M2M token overuse through brokered issuance, caching, and reuse.
 
 ### EPIC-004 - Auth0 Token Vault Delegated Access
 
-Status: planned
+Status: in-progress
 Goal: Implement delegated user authorization and vault-managed token access for agent actions.
 
 ### EPIC-005 - Auditability and User Control
@@ -161,16 +179,17 @@ Goal: Finalize story, diagrams, README, public branch, demo flow, and Devpost as
 - Security documentation: local-hooks.md, ci-security.md
 - AI guardrails documented in docs/ai/context.md
 - Phase 2 central permission system completed across authorization, orchestrator-api, agent-service, sdk contracts, and web UI
+- Phase 3 token broker foundation completed across authorization, orchestrator-api, sdk contracts, Redis fallback behavior, and web UI
 
 ### In Progress
 
-- Phase 3 token broker foundation
-- Cache-first broker flow with Redis-first and in-memory fallback behavior
-- Shared broker contracts and safe token metadata for UI/debug flows
+- Phase 4 delegated-access foundation
+- Shared models for connected accounts, delegated grants, vault sessions, and consent preview
+- Token broker integration with delegated-access state and step-up-sensitive action checks
 
 ### Next
 
-- Auth0 Token Vault delegated access wiring
+- Auth0 Token Vault delegated access production wiring
 - Auditability and user control refinement
 - Hackathon submission readiness
 

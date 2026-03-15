@@ -1,4 +1,8 @@
-import { ActorTypeSchema, SubjectTypeSchema } from "@actbound/authorization";
+import {
+  ActorTypeSchema,
+  SensitiveActionClassificationSchema,
+  SubjectTypeSchema,
+} from "@actbound/authorization";
 
 import { z } from "../openapi/extend-zod";
 import { TimestampSchema } from "./common";
@@ -45,8 +49,14 @@ export const SafeTokenMetadataSchema = z
     cacheHit: z.boolean(),
     actor: SafeTokenActorSummarySchema,
     subject: SafeTokenSubjectSummarySchema,
+    provider: z.string().optional(),
     consentGrantId: z.string().optional(),
     connectionId: z.string().optional(),
+    vaultSessionId: z.string().optional(),
+    vaultTokenReference: z.string().optional(),
+    stepUpRequired: z.boolean().default(false),
+    sensitiveActionClassification:
+      SensitiveActionClassificationSchema.optional(),
   })
   .openapi("SafeTokenMetadata");
 
@@ -58,9 +68,13 @@ export const TokenCacheEntrySummarySchema = z
     intent: TokenRequestIntentSchema,
     audience: z.string(),
     scopes: z.array(z.string()),
+    provider: z.string().optional(),
     expiresAt: TimestampSchema,
     lastAccessedAt: TimestampSchema,
     hitCount: z.number().int().nonnegative(),
+    stepUpRequired: z.boolean().default(false),
+    sensitiveActionClassification:
+      SensitiveActionClassificationSchema.optional(),
   })
   .openapi("TokenCacheEntrySummary");
 
@@ -97,6 +111,7 @@ export const TokenBrokerPreviewResultSchema = z
     cache: TokenCacheStatusSchema,
     cacheHit: z.boolean(),
     permissionDecision: PermissionDecisionSchema,
+    stepUpRequired: z.boolean().default(false),
   })
   .openapi("TokenBrokerPreviewResult");
 

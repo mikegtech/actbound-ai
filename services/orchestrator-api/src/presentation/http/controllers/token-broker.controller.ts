@@ -9,9 +9,9 @@ import {
   Req,
 } from "@nestjs/common";
 
-import type { RequestWithAuthContext } from "../common/request-context";
-import { ZodValidationPipe } from "../common/zod-validation.pipe";
-import { TokenBrokerService } from "./token-broker.service";
+import type { RequestWithAuthContext } from "../../../common/request-context";
+import { ZodValidationPipe } from "../../../common/zod-validation.pipe";
+import { TokenBrokerService } from "../../../application/token-broker/token-broker.service";
 
 @Controller("token-broker")
 export class TokenBrokerController {

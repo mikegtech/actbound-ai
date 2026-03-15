@@ -1,6 +1,7 @@
 import {
   evaluateBrokeredTokenRead,
   evaluateDelegatedTokenUse,
+  evaluateSensitiveActionExecution,
   evaluateTokenBrokerAccess,
   evaluateTokenCacheInspection,
   evaluateTokenReuse,
@@ -24,19 +25,19 @@ import {
 } from "@actbound/sdk";
 import { Injectable, Logger } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
-import { createClient, type RedisClientType } from "redis";
+
+import {
+  DelegatedAccessService,
+  type DelegatedTokenFoundation,
+} from "../delegated-access/delegated-access.service";
+import {
+  TokenBrokerCacheStore,
+  type TokenCacheRecord,
+} from "../../domain/token-broker/token-broker-cache.store";
 
 type NormalizedTokenRequest = ScopedTokenRequest & {
   actorId: string;
   subjectId: string;
-};
-
-type TokenCacheRecord = {
-  cacheKey: string;
-  metadata: SafeTokenMetadata;
-  createdAt: string;
-  lastAccessedAt: string;
-  hitCount: number;
 };
 
 export type TokenBrokerRetrievalResult = {
@@ -47,14 +48,14 @@ export type TokenBrokerRetrievalResult = {
 @Injectable()
 export class TokenBrokerService {
   private readonly logger = new Logger(TokenBrokerService.name);
-  private readonly cachePrefix = "actbound:token-broker:";
   private readonly tokenLifetimeSeconds = 15 * 60;
-  private readonly memoryCache = new Map<string, TokenCacheRecord>();
   private hits = 0;
   private misses = 0;
-  private redisClient?: RedisClientType;
-  private redisState: "uninitialized" | "connected" | "memory" =
-    "uninitialized";
+
+  constructor(
+    private readonly delegatedAccessService: DelegatedAccessService,
+    private readonly tokenBrokerCacheStore: TokenBrokerCacheStore,
+  ) {}
 
   evaluateStatusAccess(context: AuthorizationContext): AuthorizationDecision {
     return evaluateBrokeredTokenRead(context, {
@@ -91,14 +92,24 @@ export class TokenBrokerService {
   ): Promise<TokenBrokerPreviewResult> {
     const normalizedRequest = this.normalizeRequest(request, context);
     const cacheKey = this.computeCacheKey(normalizedRequest);
-    const cachedRecord = await this.peekCachedRecord(cacheKey);
+    const cachedRecord = await this.tokenBrokerCacheStore.peek(cacheKey);
+    const delegatedFoundation =
+      normalizedRequest.intent === "delegated"
+        ? this.delegatedAccessService.resolveDelegatedTokenFoundation(
+            context,
+            normalizedRequest,
+          )
+        : undefined;
     const decision = this.evaluateRequestDecision(
-      context,
+      delegatedFoundation?.authorizationContext ?? context,
       normalizedRequest,
       cacheKey,
       Boolean(cachedRecord),
     );
     const cache = await this.getCacheStatus();
+    const stepUpRequired =
+      delegatedFoundation?.stepUpRequired ??
+      decision.reasons.some((reason) => reason.code === "step_up_required");
 
     this.logger.log(
       `token-broker preview ${cachedRecord ? "cache-hit" : "cache-miss"} intent=${normalizedRequest.intent} cacheKey=${cacheKey} audience=${normalizedRequest.audience}`,
@@ -106,16 +117,17 @@ export class TokenBrokerService {
 
     return TokenBrokerPreviewResultSchema.parse({
       requestId: randomUUID(),
-      summary: cachedRecord
-        ? `Cache hit expected for ${normalizedRequest.intent} token intent; broker would reuse cached metadata.`
-        : normalizedRequest.intent === "delegated"
-          ? "Cache miss; broker would follow the delegated placeholder path after authorization."
-          : "Cache miss; broker would issue a placeholder M2M token response after authorization.",
+      summary: this.buildPreviewSummary(
+        normalizedRequest,
+        Boolean(cachedRecord),
+        stepUpRequired,
+      ),
       request: normalizedRequest,
       cacheKey,
       cache,
       cacheHit: Boolean(cachedRecord),
       permissionDecision: decision,
+      stepUpRequired,
     });
   }
 
@@ -125,9 +137,18 @@ export class TokenBrokerService {
   ): Promise<TokenBrokerRetrievalResult> {
     const normalizedRequest = this.normalizeRequest(request, context);
     const cacheKey = this.computeCacheKey(normalizedRequest);
-    const cachedRecord = await this.peekCachedRecord(cacheKey);
+    const cachedRecord = await this.tokenBrokerCacheStore.peek(cacheKey);
+    const delegatedFoundation =
+      normalizedRequest.intent === "delegated"
+        ? this.delegatedAccessService.resolveDelegatedTokenFoundation(
+            context,
+            normalizedRequest,
+          )
+        : undefined;
+    const decisionContext =
+      delegatedFoundation?.authorizationContext ?? context;
     const decision = this.evaluateRequestDecision(
-      context,
+      decisionContext,
       normalizedRequest,
       cacheKey,
       Boolean(cachedRecord),
@@ -145,32 +166,46 @@ export class TokenBrokerService {
 
     if (!cachedRecord) {
       this.misses += 1;
-      this.logger.log(`token-broker cache-miss cacheKey=${cacheKey}`);
+      this.logger.log(
+        `token-broker cache-miss cacheKey=${cacheKey} path=${normalizedRequest.intent}`,
+      );
     }
 
     const record = cachedRecord
       ? await this.consumeCachedRecord(cacheKey, cachedRecord)
-      : await this.issueAndCachePlaceholderToken(normalizedRequest, context);
+      : await this.issueAndCachePlaceholderToken(
+          normalizedRequest,
+          decisionContext,
+          delegatedFoundation,
+        );
+    const cache = await this.getCacheStatus();
+    const warnings = this.buildWarnings(
+      normalizedRequest,
+      Boolean(cachedRecord),
+      record,
+    );
+
+    if (cache.fallbackInUse) {
+      warnings.push(
+        "Redis is not active for the broker, so the in-memory fallback cache is handling this request.",
+      );
+    }
 
     return {
       decision,
       response: BrokeredTokenResponseSchema.parse({
         requestId: randomUUID(),
         cacheKey,
-        cache: await this.getCacheStatus(),
+        cache,
         metadata: this.shapeResponseMetadata(record, Boolean(cachedRecord)),
         permissionDecision: decision,
-        warnings: this.buildWarnings(
-          normalizedRequest.intent,
-          Boolean(cachedRecord),
-          record,
-        ),
+        warnings,
       }),
     };
   }
 
   async getCacheSummary(): Promise<TokenCacheSummary> {
-    const entries = (await this.listRecords())
+    const entries = (await this.tokenBrokerCacheStore.list())
       .sort((left, right) =>
         right.lastAccessedAt.localeCompare(left.lastAccessedAt),
       )
@@ -182,9 +217,13 @@ export class TokenBrokerService {
         intent: record.metadata.intent,
         audience: record.metadata.audience,
         scopes: record.metadata.scopes,
+        provider: record.metadata.provider,
         expiresAt: record.metadata.expiresAt,
         lastAccessedAt: record.lastAccessedAt,
         hitCount: record.hitCount,
+        stepUpRequired: record.metadata.stepUpRequired,
+        sensitiveActionClassification:
+          record.metadata.sensitiveActionClassification,
       }));
 
     return TokenCacheSummarySchema.parse({
@@ -202,7 +241,9 @@ export class TokenBrokerService {
       actorId: request.actorId ?? context.actor.id,
       subjectId: request.subjectId ?? context.subject.id,
       connectionId:
-        request.connectionId ?? context.tokenVaultConnection.connectionId,
+        request.connectionId ??
+        context.providerConnection.connectionId ??
+        context.tokenVaultConnection.connectionId,
       consentGrantId: request.consentGrantId ?? context.consent.grantId,
     };
   }
@@ -217,6 +258,7 @@ export class TokenBrokerService {
           consentGrantId: request.consentGrantId,
           intent: request.intent,
           scopes: [...request.scopes].sort(),
+          sensitiveActionClassification: request.sensitiveActionClassification,
           subjectId: request.subjectId,
         }),
       )
@@ -227,13 +269,30 @@ export class TokenBrokerService {
   private buildResourceContext(
     request: NormalizedTokenRequest,
     cacheKey: string,
-    cacheHit: boolean,
   ): PermissionResourceContext {
+    if (
+      request.intent === "delegated" &&
+      request.sensitiveActionClassification &&
+      request.sensitiveActionClassification !== "routine"
+    ) {
+      return {
+        type: "sensitive_action",
+        id: cacheKey,
+        ownerSubjectId: request.subjectId,
+        classification: request.sensitiveActionClassification,
+      };
+    }
+
+    if (request.intent === "delegated") {
+      return {
+        type: "delegated_token",
+        id: cacheKey,
+        ownerSubjectId: request.subjectId,
+      };
+    }
+
     return {
-      type:
-        request.intent === "delegated" && !cacheHit
-          ? "delegated_token"
-          : "brokered_token",
+      type: "brokered_token",
       id: cacheKey,
       ownerSubjectId: request.subjectId,
     };
@@ -245,29 +304,41 @@ export class TokenBrokerService {
     cacheKey: string,
     cacheHit: boolean,
   ): AuthorizationDecision {
-    if (cacheHit) {
-      return evaluateTokenReuse(
+    if (
+      request.intent === "delegated" &&
+      request.sensitiveActionClassification &&
+      request.sensitiveActionClassification !== "routine"
+    ) {
+      return evaluateSensitiveActionExecution(
         context,
-        this.buildResourceContext(request, cacheKey, true),
+        this.buildResourceContext(request, cacheKey),
       );
     }
 
     if (request.intent === "delegated") {
       return evaluateDelegatedTokenUse(
         context,
-        this.buildResourceContext(request, cacheKey, false),
+        this.buildResourceContext(request, cacheKey),
+      );
+    }
+
+    if (cacheHit) {
+      return evaluateTokenReuse(
+        context,
+        this.buildResourceContext(request, cacheKey),
       );
     }
 
     return evaluateTokenBrokerAccess(
       context,
-      this.buildResourceContext(request, cacheKey, false),
+      this.buildResourceContext(request, cacheKey),
     );
   }
 
   private async issueAndCachePlaceholderToken(
     request: NormalizedTokenRequest,
     context: AuthorizationContext,
+    delegatedFoundation?: DelegatedTokenFoundation,
   ): Promise<TokenCacheRecord> {
     const issuedAt = new Date();
     const expiresAt = new Date(
@@ -296,8 +367,23 @@ export class TokenBrokerService {
           id: context.subject.id,
           type: context.subject.type,
         },
-        consentGrantId: request.consentGrantId,
-        connectionId: request.connectionId,
+        provider:
+          delegatedFoundation?.connection?.provider ??
+          context.providerConnection.provider,
+        consentGrantId:
+          delegatedFoundation?.consent?.id ?? request.consentGrantId,
+        connectionId:
+          delegatedFoundation?.connection?.id ?? request.connectionId,
+        vaultSessionId: delegatedFoundation?.vaultSession?.id,
+        vaultTokenReference: delegatedFoundation?.vaultSession?.tokenReference,
+        stepUpRequired:
+          delegatedFoundation?.stepUpRequired ??
+          Boolean(
+            request.sensitiveActionClassification &&
+            request.sensitiveActionClassification !== "routine" &&
+            !context.attributes.stepUpSatisfied,
+          ),
+        sensitiveActionClassification: request.sensitiveActionClassification,
       }),
       createdAt: issuedAt.toISOString(),
       lastAccessedAt: issuedAt.toISOString(),
@@ -311,7 +397,7 @@ export class TokenBrokerService {
       `token-broker issue-path intent=${request.intent} cacheKey=${cacheKey} audience=${request.audience}`,
     );
 
-    await this.writeRecord(record);
+    await this.tokenBrokerCacheStore.upsert(record);
 
     return record;
   }
@@ -332,8 +418,28 @@ export class TokenBrokerService {
     });
   }
 
+  private buildPreviewSummary(
+    request: NormalizedTokenRequest,
+    cacheHit: boolean,
+    stepUpRequired: boolean,
+  ): string {
+    if (cacheHit && !stepUpRequired) {
+      return `Cache hit expected for ${request.intent} token intent; broker would reuse cached metadata.`;
+    }
+
+    if (stepUpRequired) {
+      return "Delegated preview completed, but the current request would require step-up before token use can proceed.";
+    }
+
+    if (request.intent === "delegated") {
+      return "Cache miss; broker would follow the delegated placeholder path after authorization.";
+    }
+
+    return "Cache miss; broker would issue a placeholder M2M token response after authorization.";
+  }
+
   private buildWarnings(
-    intent: NormalizedTokenRequest["intent"],
+    request: NormalizedTokenRequest,
     cacheHit: boolean,
     record: TokenCacheRecord,
   ): string[] {
@@ -343,7 +449,7 @@ export class TokenBrokerService {
       warnings.push(
         `Cache reuse path returned the existing safe token handle ${record.metadata.tokenHandle}.`,
       );
-    } else if (intent === "delegated") {
+    } else if (request.intent === "delegated") {
       warnings.push(
         "Delegated retrieval is still placeholder-only until Auth0 Token Vault wiring is added.",
       );
@@ -353,17 +459,13 @@ export class TokenBrokerService {
       );
     }
 
-    if (this.redisState !== "connected") {
+    if (record.metadata.stepUpRequired) {
       warnings.push(
-        "Redis is not active for the broker, so the in-memory fallback cache is handling this request.",
+        "This delegated token request is tied to a sensitive action that will require step-up in the real integration.",
       );
     }
 
     return warnings;
-  }
-
-  private isExpired(expiresAt: string): boolean {
-    return new Date(expiresAt).getTime() <= Date.now();
   }
 
   private async consumeCachedRecord(
@@ -378,178 +480,21 @@ export class TokenBrokerService {
 
     this.hits += 1;
     this.logger.log(`token-broker cache-hit cacheKey=${cacheKey}`);
-    await this.writeRecord(touchedRecord);
+    await this.tokenBrokerCacheStore.upsert(touchedRecord);
 
     return touchedRecord;
   }
 
-  private async peekCachedRecord(
-    cacheKey: string,
-  ): Promise<TokenCacheRecord | undefined> {
-    const record = await this.readRecord(cacheKey);
-
-    if (!record) {
-      return undefined;
-    }
-
-    return record;
-  }
-
-  private async readRecord(
-    cacheKey: string,
-  ): Promise<TokenCacheRecord | undefined> {
-    const client = await this.getRedisClient();
-
-    if (client) {
-      const raw = await client.get(`${this.cachePrefix}${cacheKey}`);
-
-      if (!raw) {
-        return undefined;
-      }
-
-      const parsed = JSON.parse(raw) as TokenCacheRecord;
-
-      if (this.isExpired(parsed.metadata.expiresAt)) {
-        await client.del(`${this.cachePrefix}${cacheKey}`);
-        return undefined;
-      }
-
-      return parsed;
-    }
-
-    this.pruneMemoryCache();
-
-    return this.memoryCache.get(cacheKey);
-  }
-
-  private async writeRecord(record: TokenCacheRecord): Promise<void> {
-    const client = await this.getRedisClient();
-    const ttlSeconds = Math.max(
-      1,
-      Math.ceil(
-        (new Date(record.metadata.expiresAt).getTime() - Date.now()) / 1000,
-      ),
-    );
-
-    if (client) {
-      await client.set(
-        `${this.cachePrefix}${record.cacheKey}`,
-        JSON.stringify(record),
-        {
-          EX: ttlSeconds,
-        },
-      );
-      return;
-    }
-
-    this.memoryCache.set(record.cacheKey, record);
-  }
-
-  private async listRecords(): Promise<TokenCacheRecord[]> {
-    const client = await this.getRedisClient();
-
-    if (client) {
-      const keys = await client.keys(`${this.cachePrefix}*`);
-      const records: TokenCacheRecord[] = [];
-
-      for (const key of keys) {
-        const raw = await client.get(key);
-
-        if (!raw) {
-          continue;
-        }
-
-        const parsed = JSON.parse(raw) as TokenCacheRecord;
-
-        if (this.isExpired(parsed.metadata.expiresAt)) {
-          await client.del(key);
-          continue;
-        }
-
-        records.push(parsed);
-      }
-
-      return records;
-    }
-
-    this.pruneMemoryCache();
-
-    return [...this.memoryCache.values()];
-  }
-
-  private pruneMemoryCache() {
-    for (const [cacheKey, record] of this.memoryCache.entries()) {
-      if (this.isExpired(record.metadata.expiresAt)) {
-        this.memoryCache.delete(cacheKey);
-      }
-    }
-  }
-
   private async getCacheStatus(): Promise<TokenCacheStatus> {
-    const backend = await this.getCacheBackend();
+    const backend = await this.tokenBrokerCacheStore.getBackend();
 
     return {
       backend: backend.backend,
       connected: backend.connected,
       fallbackInUse: backend.fallbackInUse,
-      entryCount: (await this.listRecords()).length,
+      entryCount: (await this.tokenBrokerCacheStore.list()).length,
       hits: this.hits,
       misses: this.misses,
     };
-  }
-
-  private async getCacheBackend(): Promise<{
-    backend: TokenCacheStatus["backend"];
-    connected: boolean;
-    fallbackInUse: boolean;
-  }> {
-    const client = await this.getRedisClient();
-
-    if (client) {
-      return {
-        backend: "redis",
-        connected: true,
-        fallbackInUse: false,
-      };
-    }
-
-    return {
-      backend: "memory",
-      connected: true,
-      fallbackInUse: true,
-    };
-  }
-
-  private async getRedisClient(): Promise<RedisClientType | undefined> {
-    if (!process.env.REDIS_URL) {
-      this.redisState = "memory";
-      return undefined;
-    }
-
-    if (this.redisState === "connected" && this.redisClient?.isOpen) {
-      return this.redisClient;
-    }
-
-    if (this.redisState === "memory") {
-      return undefined;
-    }
-
-    try {
-      this.redisClient = createClient({
-        url: process.env.REDIS_URL,
-      });
-      this.redisClient.on("error", (error) => {
-        this.logger.warn(`token-broker redis error: ${error.message}`);
-      });
-      await this.redisClient.connect();
-      this.redisState = "connected";
-      return this.redisClient;
-    } catch (error) {
-      this.redisState = "memory";
-      this.logger.warn(
-        `token-broker falling back to memory cache: ${error instanceof Error ? error.message : "unknown error"}`,
-      );
-      return undefined;
-    }
   }
 }

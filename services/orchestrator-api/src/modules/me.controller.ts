@@ -1,7 +1,4 @@
-import {
-  evaluateAllPermissions,
-  evaluatePermission,
-} from "@actbound/authorization";
+import { evaluateAllPermissions } from "@actbound/authorization";
 import { Controller, ForbiddenException, Get, Req } from "@nestjs/common";
 import {
   toPermissionContextSummary,
@@ -9,9 +6,14 @@ import {
 } from "@actbound/sdk";
 
 import type { RequestWithAuthContext } from "../common/request-context";
+import { DelegatedAccessService } from "../application/delegated-access/delegated-access.service";
 
 @Controller("me")
 export class MeController {
+  constructor(
+    private readonly delegatedAccessService: DelegatedAccessService,
+  ) {}
+
   @Get("permissions")
   getPermissions(@Req() request: RequestWithAuthContext) {
     const authContext = request.authContext;
@@ -42,44 +44,31 @@ export class MeController {
       });
     }
 
-    const decision = evaluatePermission(authContext, "connections:read", {
-      type: "vault_connection",
-      id: authContext.tokenVaultConnection.connectionId,
-    });
+    const delegatedConnections =
+      this.delegatedAccessService.getConnections(authContext);
 
-    if (!decision.allowed) {
+    if (!delegatedConnections.decision.allowed) {
       throw new ForbiddenException({
         code: "permission_denied",
         message:
           "Connection metadata is not available for the current context.",
         details: {
-          permission: decision.permission,
-          reasons: decision.reasons,
+          permission: delegatedConnections.decision.permission,
+          reasons: delegatedConnections.decision.reasons,
         },
       });
     }
 
-    if (
-      !authContext.tokenVaultConnection.connectionId ||
-      authContext.tokenVaultConnection.status === "missing"
-    ) {
-      return {
-        connections: [],
-      };
-    }
-
     return {
-      connections: [
-        {
-          id: authContext.tokenVaultConnection.connectionId,
-          provider:
-            authContext.tokenVaultConnection.provider ?? "auth0-token-vault",
-          accountLabel: "Token Vault connection for the active subject",
-          status: authContext.tokenVaultConnection.status,
-          scopes: authContext.tokenVaultConnection.scopes,
-          lastSyncedAt: new Date().toISOString(),
-        },
-      ],
+      connections: delegatedConnections.data.connections.map((connection) => ({
+        id: connection.id,
+        provider: connection.provider,
+        accountLabel: connection.accountLabel,
+        status:
+          connection.status === "connected" ? "connected" : "disconnected",
+        scopes: connection.grantedScopes,
+        lastSyncedAt: connection.lastSyncedAt,
+      })),
     };
   }
 }

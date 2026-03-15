@@ -1,15 +1,19 @@
 import {
-  ActorTypeSchema,
   ActorRoleSchema,
+  ActorTypeSchema,
   ConsentGrantStatusSchema,
   PermissionScopeSchema,
+  ProviderConnectionStatusSchema,
   VaultConnectionStatusSchema,
+  VaultSessionStatusSchema,
   createAuthorizationContext,
-  type ConsentGrantStatus,
-  type ActorType,
   type ActorRole,
+  type ActorType,
+  type ConsentGrantStatus,
   type PermissionScope,
+  type ProviderConnectionStatus,
   type VaultConnectionStatus,
+  type VaultSessionStatus,
 } from "@actbound/authorization";
 import { Injectable, type NestMiddleware } from "@nestjs/common";
 import type { NextFunction, Response } from "express";
@@ -23,6 +27,23 @@ function parseListHeader(value?: string): string[] {
       .map((entry) => entry.trim())
       .filter(Boolean) ?? []
   );
+}
+
+function parseBooleanHeader(fallback: boolean, value?: string): boolean {
+  if (!value) {
+    return fallback;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  return fallback;
 }
 
 function parseRoles(fallback: ActorRole[], value?: string): ActorRole[] {
@@ -77,6 +98,46 @@ function parseVaultConnectionStatus(
   return result.success ? result.data : fallback;
 }
 
+function parseProviderConnectionStatus(
+  fallback: ProviderConnectionStatus,
+  value?: string,
+): ProviderConnectionStatus {
+  const result = ProviderConnectionStatusSchema.safeParse(value);
+  return result.success ? result.data : fallback;
+}
+
+function parseVaultSessionStatus(
+  fallback: VaultSessionStatus,
+  value?: string,
+): VaultSessionStatus {
+  const result = VaultSessionStatusSchema.safeParse(value);
+  return result.success ? result.data : fallback;
+}
+
+function deriveProviderConnectionStatus(
+  consentStatus: ConsentGrantStatus,
+): ProviderConnectionStatus {
+  if (consentStatus === "granted") {
+    return "connected";
+  }
+
+  if (consentStatus === "pending") {
+    return "pending";
+  }
+
+  if (consentStatus === "revoked") {
+    return "revoked";
+  }
+
+  return "missing";
+}
+
+function deriveVaultSessionStatus(
+  providerConnectionStatus: ProviderConnectionStatus,
+): VaultSessionStatus {
+  return providerConnectionStatus === "connected" ? "active" : "missing";
+}
+
 @Injectable()
 export class AuthorizationContextMiddleware implements NestMiddleware {
   use(
@@ -93,8 +154,21 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
       "connected",
       request.header("x-vault-connection-status"),
     );
+    const providerConnectionStatus = parseProviderConnectionStatus(
+      deriveProviderConnectionStatus(consentStatus),
+      request.header("x-provider-connection-status"),
+    );
+    const vaultSessionStatus = parseVaultSessionStatus(
+      deriveVaultSessionStatus(providerConnectionStatus),
+      request.header("x-vault-session-status"),
+    );
     const consentScopes = parseScopes(
-      ["agent.preview", "agent.execute", "tokens.delegated"],
+      [
+        "agent.preview",
+        "agent.execute",
+        "tokens.delegated",
+        "sensitive.execute",
+      ],
       request.header("x-consent-scopes"),
     );
     const vaultScopes = parseScopes(
@@ -103,8 +177,17 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
         "agent.preview",
         "agent.execute",
         "tokens.delegated",
+        "sensitive.execute",
       ],
       request.header("x-vault-scopes") ?? request.header("x-token-scopes"),
+    );
+    const providerScopes = parseScopes(
+      consentScopes,
+      request.header("x-provider-scopes"),
+    );
+    const sessionScopes = parseScopes(
+      consentScopes,
+      request.header("x-vault-session-scopes"),
     );
 
     request.authContext = createAuthorizationContext({
@@ -131,17 +214,43 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
         scopes: vaultScopes,
         ownerSubjectId: subjectId,
       },
+      providerConnection: {
+        connectionId:
+          request.header("x-provider-connection-id") ?? "conn_demo_salesforce",
+        provider: request.header("x-provider-name") ?? "salesforce",
+        accountLabel:
+          request.header("x-provider-account-label") ?? "Acme Realty CRM",
+        status: providerConnectionStatus,
+        scopes: providerScopes,
+        ownerSubjectId: subjectId,
+      },
+      vaultSession: {
+        sessionId:
+          request.header("x-vault-session-id") ?? "vault_session_demo_001",
+        provider: request.header("x-provider-name") ?? "salesforce",
+        tokenReference:
+          request.header("x-vault-token-reference") ?? "vault_ref_demo_001",
+        status: vaultSessionStatus,
+        audience: request.header("x-token-audience") ?? "agent-service",
+        scopes: sessionScopes,
+        ownerSubjectId: subjectId,
+      },
       attributes: {
         tenantId: request.header("x-tenant-id") ?? "demo-tenant",
         requestId: request.header("x-request-id") ?? undefined,
         tokenAudience: request.header("x-token-audience") ?? "agent-service",
         internalServiceCall: false,
         previewMode: false,
+        stepUpSatisfied: parseBooleanHeader(
+          false,
+          request.header("x-step-up-satisfied"),
+        ),
       },
     });
 
-    // TODO: Replace header-derived consent context with an Auth0 delegated grant lookup.
-    // TODO: Replace header-derived vault scopes with a real Auth0 Token Vault scoped token exchange.
+    // TODO: Replace header-derived delegated grant state with Auth0 delegated OAuth completion data.
+    // TODO: Replace header-derived provider connection and vault session state with Auth0 Token Vault APIs.
+    // TODO: Replace x-step-up-satisfied with a real step-up authentication assertion.
     next();
   }
 }

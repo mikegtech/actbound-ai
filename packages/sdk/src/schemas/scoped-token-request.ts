@@ -1,3 +1,5 @@
+import { SensitiveActionClassificationSchema } from "@actbound/authorization";
+
 import { z } from "../openapi/extend-zod";
 
 export const TokenRequestIntentSchema = z
@@ -18,6 +20,8 @@ export const ScopedTokenRequestSchema = z
     subjectId: z.string().optional(),
     connectionId: z.string().optional(),
     consentGrantId: z.string().optional(),
+    sensitiveActionClassification:
+      SensitiveActionClassificationSchema.optional(),
   })
   .openapi("ScopedTokenRequest");
 

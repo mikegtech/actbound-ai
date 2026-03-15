@@ -46,6 +46,34 @@ export interface AuthorizationPolicyEngine extends PolicyEvaluator {
     context: AuthorizationContext,
     resource?: PermissionResourceContext,
   ): AuthorizationDecision;
+  evaluateProviderConnectionRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateProviderConnectionConnect(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateProviderConnectionRevoke(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateDelegatedGrantRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateDelegatedGrantPreview(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateVaultSessionRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
+  evaluateSensitiveActionExecution(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision;
   evaluateUserConsentPermission(
     context: AuthorizationContext,
     requiredScopes?: PermissionScope[],
@@ -185,11 +213,29 @@ export class DefaultAuthorizationPolicyEngine implements AuthorizationPolicyEngi
       );
     }
 
+    if (context.consent.status === "pending") {
+      reasons.push(
+        createDecisionReason(
+          "delegated_grant_pending",
+          "The delegated consent grant is pending completion.",
+        ),
+      );
+    }
+
     if (context.consent.status === "revoked") {
       reasons.push(
         createDecisionReason(
           "consent_grant_revoked",
           "The delegated consent grant has been revoked.",
+        ),
+      );
+    }
+
+    if (context.consent.status === "expired") {
+      reasons.push(
+        createDecisionReason(
+          "delegated_grant_expired",
+          "The delegated consent grant has expired.",
         ),
       );
     }
@@ -277,6 +323,137 @@ export class DefaultAuthorizationPolicyEngine implements AuthorizationPolicyEngi
     return reasons;
   }
 
+  private collectProviderConnectionReasons(
+    context: AuthorizationContext,
+    requiredScopes: PermissionScope[],
+  ): AuthorizationDecisionReason[] {
+    const reasons: AuthorizationDecisionReason[] = [];
+
+    if (context.providerConnection.status === "missing") {
+      reasons.push(
+        createDecisionReason(
+          "provider_connection_missing",
+          "No provider connection is available for this subject.",
+        ),
+      );
+    }
+
+    if (
+      context.providerConnection.status === "pending" ||
+      context.providerConnection.status === "revoked" ||
+      context.providerConnection.status === "error"
+    ) {
+      reasons.push(
+        createDecisionReason(
+          "provider_connection_inactive",
+          "The provider connection is not currently in a usable state.",
+        ),
+      );
+    }
+
+    if (
+      context.providerConnection.ownerSubjectId &&
+      context.providerConnection.ownerSubjectId !== context.subject.id
+    ) {
+      reasons.push(
+        createDecisionReason(
+          "resource_owner_mismatch",
+          "The provider connection belongs to a different subject.",
+        ),
+      );
+    }
+
+    const missingScopes = requiredScopes.filter(
+      (scope) => !context.providerConnection.scopes.includes(scope),
+    );
+
+    if (missingScopes.length > 0) {
+      reasons.push(
+        createDecisionReason(
+          "consent_scope_missing",
+          `The provider connection is missing required delegated scopes: ${missingScopes.join(", ")}.`,
+        ),
+      );
+    }
+
+    return reasons;
+  }
+
+  private collectVaultSessionReasons(
+    context: AuthorizationContext,
+    requiredScopes: PermissionScope[],
+  ): AuthorizationDecisionReason[] {
+    const reasons: AuthorizationDecisionReason[] = [];
+
+    if (context.vaultSession.status === "missing") {
+      reasons.push(
+        createDecisionReason(
+          "vault_session_missing",
+          "No delegated vault session is available for this subject.",
+        ),
+      );
+    }
+
+    if (
+      context.vaultSession.status === "expired" ||
+      context.vaultSession.status === "revoked"
+    ) {
+      reasons.push(
+        createDecisionReason(
+          "vault_session_inactive",
+          "The delegated vault session is not active.",
+        ),
+      );
+    }
+
+    if (
+      context.vaultSession.ownerSubjectId &&
+      context.vaultSession.ownerSubjectId !== context.subject.id
+    ) {
+      reasons.push(
+        createDecisionReason(
+          "resource_owner_mismatch",
+          "The delegated vault session belongs to a different subject.",
+        ),
+      );
+    }
+
+    const missingScopes = requiredScopes.filter(
+      (scope) => !context.vaultSession.scopes.includes(scope),
+    );
+
+    if (missingScopes.length > 0) {
+      reasons.push(
+        createDecisionReason(
+          "vault_scope_missing",
+          `The delegated vault session is missing required scopes: ${missingScopes.join(", ")}.`,
+        ),
+      );
+    }
+
+    return reasons;
+  }
+
+  private collectSensitiveActionReasons(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecisionReason[] {
+    if (
+      !resource?.classification ||
+      resource.classification === "routine" ||
+      context.attributes.stepUpSatisfied
+    ) {
+      return [];
+    }
+
+    return [
+      createDecisionReason(
+        "step_up_required",
+        `Step-up authentication is required before ${resource.classification} actions can proceed.`,
+      ),
+    ];
+  }
+
   evaluate(input: PolicyEvaluationInput): AuthorizationDecision {
     return this.evaluatePermission(
       input.context,
@@ -314,6 +491,28 @@ export class DefaultAuthorizationPolicyEngine implements AuthorizationPolicyEngi
           policy.requiredVaultScopes ?? [],
         ),
       );
+    }
+
+    if (policy.requiresProviderConnection) {
+      reasons.push(
+        ...this.collectProviderConnectionReasons(
+          context,
+          policy.requiredProviderScopes ?? [],
+        ),
+      );
+    }
+
+    if (policy.requiresVaultSession) {
+      reasons.push(
+        ...this.collectVaultSessionReasons(
+          context,
+          policy.requiredVaultSessionScopes ?? [],
+        ),
+      );
+    }
+
+    if (policy.requiresStepUpForSensitiveActions) {
+      reasons.push(...this.collectSensitiveActionReasons(context, resource));
     }
 
     return reasons.length === 0
@@ -377,6 +576,7 @@ export class DefaultAuthorizationPolicyEngine implements AuthorizationPolicyEngi
       "delegated_tokens:use",
       resource ?? {
         type: "delegated_token",
+        ownerSubjectId: context.subject.id,
       },
     );
   }
@@ -390,6 +590,110 @@ export class DefaultAuthorizationPolicyEngine implements AuthorizationPolicyEngi
       "token_cache:inspect",
       resource ?? {
         type: "token_cache",
+      },
+    );
+  }
+
+  evaluateProviderConnectionRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "provider_connections:read",
+      resource ?? {
+        type: "provider_connection",
+        id: context.providerConnection.connectionId,
+        ownerSubjectId: context.providerConnection.ownerSubjectId,
+      },
+    );
+  }
+
+  evaluateProviderConnectionConnect(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "provider_connections:connect",
+      resource ?? {
+        type: "provider_connection",
+        ownerSubjectId: context.subject.id,
+      },
+    );
+  }
+
+  evaluateProviderConnectionRevoke(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "provider_connections:revoke",
+      resource ?? {
+        type: "provider_connection",
+        id: context.providerConnection.connectionId,
+        ownerSubjectId: context.providerConnection.ownerSubjectId,
+      },
+    );
+  }
+
+  evaluateDelegatedGrantRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "delegated_grants:read",
+      resource ?? {
+        type: "delegated_grant",
+        id: context.consent.grantId,
+        ownerSubjectId: context.consent.ownerSubjectId,
+      },
+    );
+  }
+
+  evaluateDelegatedGrantPreview(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "delegated_grants:preview",
+      resource ?? {
+        type: "consent_record",
+        id: context.consent.grantId,
+        ownerSubjectId: context.subject.id,
+      },
+    );
+  }
+
+  evaluateVaultSessionRead(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "vault_sessions:read",
+      resource ?? {
+        type: "vault_session",
+        id: context.vaultSession.sessionId,
+        ownerSubjectId: context.vaultSession.ownerSubjectId,
+      },
+    );
+  }
+
+  evaluateSensitiveActionExecution(
+    context: AuthorizationContext,
+    resource?: PermissionResourceContext,
+  ): AuthorizationDecision {
+    return this.evaluatePermission(
+      context,
+      "sensitive_actions:execute",
+      resource ?? {
+        type: "sensitive_action",
+        ownerSubjectId: context.subject.id,
+        classification: "sensitive",
       },
     );
   }
@@ -535,16 +839,65 @@ export function evaluateTokenCacheInspection(
   return policyEngine.evaluateTokenCacheInspection(context, resource);
 }
 
+export function evaluateProviderConnectionRead(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateProviderConnectionRead(context, resource);
+}
+
+export function evaluateProviderConnectionConnect(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateProviderConnectionConnect(context, resource);
+}
+
+export function evaluateProviderConnectionRevoke(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateProviderConnectionRevoke(context, resource);
+}
+
+export function evaluateDelegatedGrantRead(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateDelegatedGrantRead(context, resource);
+}
+
+export function evaluateDelegatedGrantPreview(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateDelegatedGrantPreview(context, resource);
+}
+
+export function evaluateVaultSessionRead(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateVaultSessionRead(context, resource);
+}
+
+export function evaluateSensitiveActionExecution(
+  context: AuthorizationContext,
+  resource?: PermissionResourceContext,
+): AuthorizationDecision {
+  return policyEngine.evaluateSensitiveActionExecution(context, resource);
+}
+
 export function evaluateUserConsentPermission(
   context: AuthorizationContext,
-  requiredScopes?: PermissionScope[],
+  requiredScopes: PermissionScope[] = [],
 ): AuthorizationDecision {
   return policyEngine.evaluateUserConsentPermission(context, requiredScopes);
 }
 
 export function evaluateTokenVaultConnectionPermission(
   context: AuthorizationContext,
-  requiredScopes?: PermissionScope[],
+  requiredScopes: PermissionScope[] = [],
 ): AuthorizationDecision {
   return policyEngine.evaluateTokenVaultConnectionPermission(
     context,

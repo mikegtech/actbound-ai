@@ -2,6 +2,7 @@ import { PermissionGuard } from "@actbound/authorization";
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 
 import { AuthorizationContextMiddleware } from "./common/authorization-context.middleware";
+import { DelegatedAccessModule } from "./delegated-access/delegated-access.module";
 import { AgentActionsController } from "./modules/agent-actions.controller";
 import { AuditEventsController } from "./modules/audit-events.controller";
 import { DocsController } from "./modules/docs.controller";
@@ -10,7 +11,7 @@ import { MeController } from "./modules/me.controller";
 import { TokenBrokerModule } from "./token-broker/token-broker.module";
 
 @Module({
-  imports: [TokenBrokerModule],
+  imports: [DelegatedAccessModule, TokenBrokerModule],
   controllers: [
     AgentActionsController,
     AuditEventsController,

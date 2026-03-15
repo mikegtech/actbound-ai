@@ -8,7 +8,9 @@ import {
   PermissionResourceSchema,
   PermissionSchema,
   PermissionScopeSchema,
+  ProviderConnectionStatusSchema,
   SubjectTypeSchema,
+  VaultSessionStatusSchema,
   VaultConnectionStatusSchema,
   type AuthorizationContext,
 } from "@actbound/authorization";
@@ -45,12 +47,28 @@ export const PermissionContextSummarySchema = z
       status: VaultConnectionStatusSchema,
       scopes: z.array(PermissionScopeSchema),
     }),
+    providerConnection: z.object({
+      connectionId: z.string().optional(),
+      provider: z.string().optional(),
+      accountLabel: z.string().optional(),
+      status: ProviderConnectionStatusSchema,
+      scopes: z.array(PermissionScopeSchema),
+    }),
+    vaultSession: z.object({
+      sessionId: z.string().optional(),
+      provider: z.string().optional(),
+      tokenReference: z.string().optional(),
+      status: VaultSessionStatusSchema,
+      audience: z.string().optional(),
+      scopes: z.array(PermissionScopeSchema),
+    }),
     attributes: z.object({
       tenantId: z.string(),
       requestId: z.string().optional(),
       tokenAudience: z.string().optional(),
       internalServiceCall: z.boolean(),
       previewMode: z.boolean(),
+      stepUpSatisfied: z.boolean(),
     }),
   })
   .openapi("PermissionContextSummary");
@@ -120,12 +138,28 @@ export function toPermissionContextSummary(
       status: context.tokenVaultConnection.status,
       scopes: context.tokenVaultConnection.scopes,
     },
+    providerConnection: {
+      connectionId: context.providerConnection.connectionId,
+      provider: context.providerConnection.provider,
+      accountLabel: context.providerConnection.accountLabel,
+      status: context.providerConnection.status,
+      scopes: context.providerConnection.scopes,
+    },
+    vaultSession: {
+      sessionId: context.vaultSession.sessionId,
+      provider: context.vaultSession.provider,
+      tokenReference: context.vaultSession.tokenReference,
+      status: context.vaultSession.status,
+      audience: context.vaultSession.audience,
+      scopes: context.vaultSession.scopes,
+    },
     attributes: {
       tenantId: context.attributes.tenantId,
       requestId: context.attributes.requestId,
       tokenAudience: context.attributes.tokenAudience,
       internalServiceCall: context.attributes.internalServiceCall,
       previewMode: context.attributes.previewMode,
+      stepUpSatisfied: context.attributes.stepUpSatisfied,
     },
   };
 }

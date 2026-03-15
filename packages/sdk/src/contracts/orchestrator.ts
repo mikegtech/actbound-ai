@@ -6,14 +6,24 @@ import {
   AgentActionPreviewResultSchema,
   AuditEventListSchema,
   BrokeredTokenResponseSchema,
+  ConnectionIdParamsSchema,
+  ConnectProviderRequestSchema,
+  ConnectProviderResultSchema,
+  ConsentPreviewRequestSchema,
+  ConsentPreviewResultSchema,
+  ConsentSummaryListSchema,
   HealthStatusSchema,
   PermissionDecisionListSchema,
+  ProviderConnectionListSchema,
+  RevocationIntentSchema,
+  RevokeConnectionResultSchema,
   ScopedTokenRequestSchema,
   StandardApiErrorSchema,
   TokenBrokerPreviewResultSchema,
   TokenBrokerStatusSchema,
   TokenCacheSummarySchema,
   VaultConnectionListSchema,
+  VaultSessionListSchema,
 } from "../schemas";
 
 export const orchestratorRoutes = {
@@ -53,6 +63,118 @@ export const orchestratorRoutes = {
       200: {
         description: "Current actor connections",
         schema: VaultConnectionListSchema,
+      },
+    },
+  },
+  connections: {
+    method: "get",
+    path: "/connections",
+    summary: "Delegated provider connections for the current subject",
+    operationId: "listProviderConnections",
+    tags: ["Delegated Access"],
+    responses: {
+      200: {
+        description: "Provider connections",
+        schema: ProviderConnectionListSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  connectProvider: {
+    method: "post",
+    path: "/connections/connect",
+    summary: "Create a delegated provider connection placeholder",
+    operationId: "connectProvider",
+    tags: ["Delegated Access"],
+    request: {
+      body: ConnectProviderRequestSchema,
+    },
+    responses: {
+      200: {
+        description: "Connected provider placeholder result",
+        schema: ConnectProviderResultSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  revokeConnection: {
+    method: "post",
+    path: "/connections/{id}/revoke",
+    summary: "Revoke a delegated provider connection placeholder",
+    operationId: "revokeProviderConnection",
+    tags: ["Delegated Access"],
+    request: {
+      params: ConnectionIdParamsSchema,
+      body: RevocationIntentSchema,
+    },
+    responses: {
+      200: {
+        description: "Revocation placeholder result",
+        schema: RevokeConnectionResultSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  consents: {
+    method: "get",
+    path: "/consents",
+    summary: "Delegated consent summaries for the current subject",
+    operationId: "listConsentSummaries",
+    tags: ["Delegated Access"],
+    responses: {
+      200: {
+        description: "Consent summaries",
+        schema: ConsentSummaryListSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  previewConsent: {
+    method: "post",
+    path: "/consents/preview",
+    summary: "Preview delegated consent and step-up requirements",
+    operationId: "previewConsent",
+    tags: ["Delegated Access"],
+    request: {
+      body: ConsentPreviewRequestSchema,
+    },
+    responses: {
+      200: {
+        description: "Consent preview result",
+        schema: ConsentPreviewResultSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
+      },
+    },
+  },
+  vaultSessions: {
+    method: "get",
+    path: "/vault/sessions",
+    summary: "Delegated vault session metadata for the current subject",
+    operationId: "listVaultSessions",
+    tags: ["Delegated Access"],
+    responses: {
+      200: {
+        description: "Vault session metadata",
+        schema: VaultSessionListSchema,
+      },
+      403: {
+        description: "Permission denied",
+        schema: StandardApiErrorSchema,
       },
     },
   },

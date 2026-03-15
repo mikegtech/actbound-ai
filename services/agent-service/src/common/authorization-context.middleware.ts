@@ -130,6 +130,7 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
         tokenAudience: request.header("x-token-audience") ?? "agent-service",
         internalServiceCall: true,
         previewMode: false,
+        stepUpSatisfied: true,
       },
     });
 
