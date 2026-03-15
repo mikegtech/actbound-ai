@@ -10,6 +10,7 @@
 # Secret scanning and hook configuration
 .gitleaks.toml @mikegtech
 .pre-commit-config.yaml @mikegtech
+.env.example @mikegtech
 
 # Git ignore rules (controls what can be committed)
 .gitignore @mikegtech

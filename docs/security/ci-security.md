@@ -19,6 +19,8 @@ CI is the authoritative enforcement layer for this repo. Local hooks provide fas
 | Dependencies    | —                           | dependency-review-action                    |
 | Workflow lint   | —                           | actionlint                                  |
 
+The repo also includes `.github/CODEOWNERS` and `.env.example` as tracked hygiene files for public-repo readiness and safe local setup.
+
 ## Workflows
 
 ### ci.yml — Quality
@@ -80,8 +82,9 @@ CI runs full-repo checks. This is intentional and different from local hooks.
 - **Third-party actions** (`gitleaks/gitleaks-action`, `pnpm/action-setup`) are pinned to full commit SHAs with a version comment. Update SHAs when upgrading.
 - **GitHub-owned actions** (`actions/checkout`, `actions/setup-node`, `github/codeql-action`, `actions/dependency-review-action`) use version tags (`@v4`, `@v3`). This is an acceptable tradeoff: GitHub-owned actions have strong provenance guarantees, and SHA-pinning them creates high maintenance burden with minimal security gain.
 - **Container images** (`semgrep/semgrep`) are pinned to a versioned tag. Update periodically.
-- **External scripts** (actionlint installer) are fetched from a SHA-pinned URL, not from `main`.
+- **External scripts** (actionlint installer) are fetched from a SHA-pinned URL with fail-closed `curl` options over HTTPS/TLS, not from `main`.
 - **All checkout steps** set `persist-credentials: false` to avoid leaking tokens to subsequent steps.
+- **Tracked hygiene files**: `.github/CODEOWNERS` protects sensitive paths, and `.env.example` provides a non-secret local configuration template.
 
 ## What CI should never do
 
@@ -152,6 +155,10 @@ After the first successful CI run, apply these settings in the GitHub UI.
 
 - [ ] Verify `.github/CODEOWNERS` owners match the team structure
 - [ ] Enable "Require review from Code Owners" in branch protection
+
+### Environment template
+
+- [ ] Keep `.env.example` aligned with the actual local env surface for `apps/web` and both Nest services
 
 ## Deferred items
 

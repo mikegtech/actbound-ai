@@ -148,8 +148,9 @@ Goal: Finalize story, diagrams, README, public branch, demo flow, and Devpost as
 - Syncpack guard added for workspace dependency consistency
 - Local git hooks: pre-commit (secret scanning, lint, format, hygiene) and pre-push (typecheck)
 - CI workflows: lint/build/typecheck, CodeQL, dependency review, gitleaks, actionlint, Semgrep
-- Supply-chain hardening: third-party actions SHA-pinned, container images versioned, persist-credentials disabled
+- Supply-chain hardening: third-party actions SHA-pinned, actionlint installer script SHA-pinned with fail-closed download, semgrep container version-pinned, persist-credentials disabled
 - CODEOWNERS for security-sensitive paths
+- Public-repo hygiene files present: `.github/CODEOWNERS`, `.env.example`
 - Security documentation: local-hooks.md, ci-security.md
 - AI guardrails documented in docs/ai/context.md
 

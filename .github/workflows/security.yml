@@ -33,8 +33,13 @@ jobs:
 
       # Script URL pinned to the v1.7.7 release commit to avoid mutable main-branch fetch.
       - name: Download actionlint
-        run: bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/03d0035246f3e81f36aed592ffb4bebf33a03106/scripts/download-actionlint.bash) 1.7.7
         shell: bash
+        run: |
+          curl --fail --show-error --silent --location \
+            --proto '=https' --tlsv1.2 \
+            --output download-actionlint.bash \
+            https://raw.githubusercontent.com/rhysd/actionlint/03d0035246f3e81f36aed592ffb4bebf33a03106/scripts/download-actionlint.bash
+          bash download-actionlint.bash 1.7.7
 
       - name: Run actionlint
         run: ./actionlint -color
@@ -52,4 +57,4 @@ jobs:
           persist-credentials: false
 
       - name: Run Semgrep
-        run: semgrep scan --config p/default --config p/javascript --error --quiet
+        run: semgrep scan --metrics=off --config p/default --config p/javascript --error --quiet
