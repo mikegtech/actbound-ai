@@ -184,7 +184,32 @@ After the first successful CI run, apply these settings in the GitHub UI.
 
 - [ ] Keep `.env.example` aligned with the actual local env surface for `apps/web` and both Nest services
 
+## Test suite and coverage
+
+Tests run in CI as part of the Quality job (`pnpm test:coverage`). Coverage reports are uploaded as artifacts.
+
+Current thresholds (in `vitest.shared.ts`):
+
+| Metric     | Threshold |
+| ---------- | --------- |
+| Lines      | 10%       |
+| Functions  | 10%       |
+| Branches   | 5%        |
+| Statements | 10%       |
+
+These are intentionally low starter thresholds. Raise them as coverage improves — the thresholds should ratchet up, never down. Update `vitest.shared.ts` and re-verify with `pnpm test:coverage`.
+
+Recommended next thresholds (when more tests are added):
+
+| Metric     | Target |
+| ---------- | ------ |
+| Lines      | 40%    |
+| Functions  | 40%    |
+| Branches   | 30%    |
+| Statements | 40%    |
+
 ## Deferred items
 
-- [ ] Test suite CI gate (enable `pnpm test` step in ci.yml and add to required status checks)
 - [ ] SARIF upload for semgrep (if GitHub Security tab aggregation is desired)
+- [ ] Raise coverage thresholds as test coverage improves
+- [ ] Fix token broker schema wrapping (permissionDecision needs `toPermissionDecisionRecord` in preview/retrieve flows)
