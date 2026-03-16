@@ -4,6 +4,25 @@
   "version": "0.1.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./nest": {
+      "types": "./dist/nest.d.ts",
+      "require": "./dist/nest.js",
+      "default": "./dist/nest.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "nest": [
+        "dist/nest.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"

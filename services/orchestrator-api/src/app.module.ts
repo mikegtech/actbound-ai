@@ -1,4 +1,4 @@
-import { PermissionGuard } from "@actbound/authorization";
+import { PermissionGuard } from "@actbound/authorization/nest";
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 
 import { AuthorizationContextMiddleware } from "./common/authorization-context.middleware";
