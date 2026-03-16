@@ -1,10 +1,9 @@
 {
   "extends": "../config/tsconfig/library.json",
   "compilerOptions": {
-    "paths": {
-      "@actbound/authorization": ["../authorization/src/index.ts"],
-      "@actbound/authorization/*": ["../authorization/src/*"]
-    }
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {}
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"]
