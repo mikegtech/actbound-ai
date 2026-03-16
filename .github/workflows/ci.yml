@@ -49,6 +49,80 @@ jobs:
       - name: Test & Coverage
         run: pnpm test:coverage
 
+      - name: Coverage Summary
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+
+          const data = JSON.parse(fs.readFileSync('coverage/coverage-final.json', 'utf8'));
+          const root = process.cwd() + '/';
+
+          // Per-file stats
+          function fileCoverage(entry) {
+            const count = (map) => { const vals = Object.values(map); return vals.length; };
+            const covered = (map) => { const vals = Object.values(map); return vals.filter(v => typeof v === 'number' ? v > 0 : v.covered > 0).length; };
+            const s = entry.s || {}, f = entry.f || {}, b = entry.b || {};
+            const bTotal = Object.values(b).reduce((a, arr) => a + arr.length, 0);
+            const bCov = Object.values(b).reduce((a, arr) => a + arr.filter(v => v > 0).length, 0);
+            return {
+              statements: { total: count(s), covered: covered(s) },
+              functions: { total: count(f), covered: covered(f) },
+              branches: { total: bTotal, covered: bCov },
+            };
+          }
+
+          const pct = (c, t) => t === 0 ? '—' : (c / t * 100).toFixed(1) + '%';
+          const bar = (c, t) => {
+            if (t === 0) return '—';
+            const p = c / t * 100;
+            if (p >= 80) return '🟢 ' + p.toFixed(1) + '%';
+            if (p >= 50) return '🟡 ' + p.toFixed(1) + '%';
+            return '🔴 ' + p.toFixed(1) + '%';
+          };
+
+          // Group by package
+          const groups = {};
+          for (const [file, entry] of Object.entries(data)) {
+            const rel = file.replace(root, '');
+            const parts = rel.split('/');
+            let pkg;
+            if (parts[0] === 'packages' || parts[0] === 'services' || parts[0] === 'apps') {
+              pkg = parts[0] + '/' + parts[1];
+            } else {
+              pkg = parts[0];
+            }
+            if (!groups[pkg]) groups[pkg] = { stmtT: 0, stmtC: 0, fnT: 0, fnC: 0, brT: 0, brC: 0 };
+            const fc = fileCoverage(entry);
+            groups[pkg].stmtT += fc.statements.total;
+            groups[pkg].stmtC += fc.statements.covered;
+            groups[pkg].fnT += fc.functions.total;
+            groups[pkg].fnC += fc.functions.covered;
+            groups[pkg].brT += fc.branches.total;
+            groups[pkg].brC += fc.branches.covered;
+          }
+
+          // Totals
+          let tStmtT = 0, tStmtC = 0, tFnT = 0, tFnC = 0, tBrT = 0, tBrC = 0;
+
+          let md = '## Coverage Summary\n\n';
+          md += '| Package | Statements | Functions | Branches |\n';
+          md += '| --- | --- | --- | --- |\n';
+
+          for (const [pkg, g] of Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]))) {
+            md += '| \`' + pkg + '\` | ' + bar(g.stmtC, g.stmtT) + ' | ' + bar(g.fnC, g.fnT) + ' | ' + bar(g.brC, g.brT) + ' |\n';
+            tStmtT += g.stmtT; tStmtC += g.stmtC;
+            tFnT += g.fnT; tFnC += g.fnC;
+            tBrT += g.brT; tBrC += g.brC;
+          }
+
+          md += '| **Total** | **' + bar(tStmtC, tStmtT) + '** | **' + bar(tFnC, tFnT) + '** | **' + bar(tBrC, tBrT) + '** |\n';
+
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+          console.log(md);
+          "
+
       - name: Upload Coverage
         if: always()
         uses: actions/upload-artifact@v6
