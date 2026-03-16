@@ -5,11 +5,12 @@ export const defineSharedVitestConfig = () => {
   return defineConfig({
     plugins: [tsconfigPaths()],
     test: {
+      include: ["src/**/*.spec.ts", "src/**/*.test.ts"],
       globals: true,
       environment: "node",
       coverage: {
         provider: "v8",
-        reporter: ["text", "lcov", "json-summary", "html"],
+        reporter: ["text", "lcov", "json-summary", "html", "junit"],
         reportsDirectory: "./coverage",
         thresholds: {
           lines: 10,

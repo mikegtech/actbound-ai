@@ -16,7 +16,13 @@ From the monorepo root:
 - **Run tests in watch mode**: `pnpm test:watch`
 - **Run tests and generate coverage**: `pnpm test:coverage`
 
-Coverage reports are generated in the `coverage/` directory and uploaded automatically via GitHub Actions as a `coverage-report` artifact.
+Coverage reports are generated in the `coverage/` directory and uploaded automatically via GitHub Actions as a `coverage-report` artifact. Generated formats include:
+
+- `text` (CLI output)
+- `lcov`
+- `json-summary`
+- `html`
+- `junit`
 
 ## Coverage Policy and Thresholds
 
