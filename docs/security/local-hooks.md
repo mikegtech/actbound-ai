@@ -38,20 +38,21 @@ Local hooks enforce a **staged-files-only** policy. This is deliberate.
 
 These hooks run against **staged files only** and are designed to complete in seconds.
 
-| Hook                    | What it does                                              |
-| ----------------------- | --------------------------------------------------------- |
-| trailing-whitespace     | Strips trailing whitespace                                |
-| end-of-file-fixer       | Ensures files end with a newline                          |
-| check-yaml              | Validates YAML syntax                                     |
-| check-json              | Validates JSON syntax                                     |
-| check-merge-conflict    | Blocks leftover merge conflict markers                    |
-| check-added-large-files | Blocks files over 500 KB                                  |
-| no-commit-to-branch     | Prevents direct commits to `main` / `master`              |
-| detect-private-key      | Scans for private key material                            |
-| check-symlinks          | Detects broken symlinks                                   |
-| **gitleaks**            | Scans staged content for secrets, tokens, and credentials |
-| **prettier**            | Checks formatting (JS/TS/JSON/CSS/MD/YAML)                |
-| **eslint**              | Lints TypeScript and JavaScript (zero warnings allowed)   |
+| Hook                    | What it does                                                             |
+| ----------------------- | ------------------------------------------------------------------------ |
+| trailing-whitespace     | Strips trailing whitespace                                               |
+| end-of-file-fixer       | Ensures files end with a newline                                         |
+| check-yaml              | Validates YAML syntax                                                    |
+| check-json              | Validates JSON syntax                                                    |
+| check-merge-conflict    | Blocks leftover merge conflict markers                                   |
+| check-added-large-files | Blocks files over 500 KB                                                 |
+| no-commit-to-branch     | Prevents direct commits to `main` / `master`                             |
+| detect-private-key      | Scans for private key material                                           |
+| check-symlinks          | Detects broken symlinks                                                  |
+| **gitleaks**            | Scans staged content for secrets, tokens, and credentials                |
+| **prettier**            | Auto-formats staged files; commit blocked so you can review and re-stage |
+| **eslint**              | Lints TypeScript and JavaScript (zero warnings allowed)                  |
+| **syncpack**            | Checks dependency version consistency (runs when package.json is staged) |
 
 ## What runs on push
 
@@ -98,20 +99,23 @@ pnpm exec gitleaks detect --source . --verbose
 # Or add a path/rule allowlist entry in .gitleaks.toml
 ```
 
-### prettier: formatting error
+### prettier: files were modified
 
 ```
-Checking formatting...
-[warn] apps/web/src/App.tsx
+prettier (auto-format staged files)......................................Failed
+- hook id: prettier
+- files were modified by this hook
 ```
 
-**Fix:** Format only the file(s) that failed — not the whole repo.
+**What happened:** Prettier auto-formatted your staged files. The commit was blocked so you can review the changes.
+
+**Fix:** Review the diff, then re-stage and commit:
 
 ```bash
-pnpm exec prettier --write <file>
+git diff                 # review what prettier changed
+git add -u               # re-stage the formatted files
+git commit               # commit again — prettier will pass this time
 ```
-
-Do **not** run `prettier --write .` to fix a single file. If multiple unrelated files fail, that indicates a repo-wide formatting issue that should be addressed as a separate task.
 
 ### eslint: lint error
 
