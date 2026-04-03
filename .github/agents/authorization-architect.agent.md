@@ -18,9 +18,12 @@ applyTo:
 
 Read before any work:
 
-- `docs/ai/context.md` (project-wide guardrails)
-- `docs/decisions/ADR-004-service-architecture-and-boundaries.md` (authorization boundary policy)
-- `docs/architecture.md` (authorization flow)
+- `docs/ai/context.md` (program index — single source of truth)
+- `docs/architecture/authorization-model.md` (RBAC, ABAC, OpenFGA model)
+- `docs/architecture/enforcement-model.md` (centralized authorization service)
+- `docs/decisions/ADR-004-service-architecture-and-boundaries.md` (authorization boundary)
+- `docs/decisions/ADR-014-rbac-abac-openfga-separation.md` (layer separation)
+- `docs/decisions/ADR-018-centralized-authorization-service.md` (single evaluation point)
 
 ## Responsibilities
 

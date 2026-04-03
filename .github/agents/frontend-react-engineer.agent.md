@@ -19,9 +19,10 @@ applyTo:
 
 Read before any work:
 
-- `docs/ai/context.md` (project-wide guardrails)
-- `docs/architecture.md` (authorization flow and contract strategy)
+- `docs/ai/context.md` (program index — single source of truth)
+- `docs/architecture/enforcement-model.md` (CASL integration contract)
 - `docs/decisions/ADR-004-service-architecture-and-boundaries.md` (frontend policy)
+- `docs/decisions/ADR-020-casl-integration-model.md` (CASL is advisory only)
 
 ## Responsibilities
 

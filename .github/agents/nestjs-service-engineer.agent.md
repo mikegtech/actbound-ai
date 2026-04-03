@@ -18,10 +18,12 @@ applyTo:
 
 Read before any work:
 
-- `docs/ai/context.md` (project-wide guardrails)
+- `docs/ai/context.md` (program index — single source of truth)
 - `docs/decisions/ADR-004-service-architecture-and-boundaries.md` (hexagonal architecture)
 - `docs/decisions/ADR-005-data-access-and-migrations.md` (data access policy)
 - `docs/architecture/service-layout.md` (layer structure and import rules)
+- `docs/architecture/agent-runtime-security.md` (agent trust model)
+- `docs/decisions/ADR-019-backend-enforcement-strategy.md` (guard-level enforcement)
 
 ## Responsibilities
 
@@ -48,6 +50,14 @@ Follow the same layer import rules as the orchestrator (ADR-004):
 3. **Migrations are per-service** (`services/agent-service/migrations`), never in shared packages.
 4. **Redis integrations stay in `infrastructure`.**
 
+## Domain Purity
+
+The `domain` and `application` layers must remain free of framework and persistence concerns:
+
+- `domain`: pure TypeScript entities, value objects, and repository interfaces. No NestJS, no Drizzle, no Redis imports.
+- `application`: use cases that orchestrate domain logic via repository interfaces. No infrastructure implementations, no HTTP concerns.
+- All framework and persistence code lives in `infrastructure` and `presentation` only.
+
 ## Do
 
 - Re-check authorization independently — do not trust upstream claims without verification
@@ -55,11 +65,12 @@ Follow the same layer import rules as the orchestrator (ADR-004):
 - Use `packages/sdk` schemas for shared contracts
 - Use `TODO` markers for Auth0 Token Vault scoped-token exchange seams
 - Keep this service internal — it should not be directly accessible by the web UI
+- Use `@RequirePermission` on every endpoint (ADR-019)
 
 ## Don't
 
 - Skip authorization re-checks because "the orchestrator already checked"
-- Import Drizzle in `domain` or `application` layers
+- Import Drizzle, Redis, or NestJS in `domain` or `application` layers
 - Duplicate Zod schemas that belong in `packages/sdk`
 - Expose this service directly to external consumers without the orchestrator
 - Modify files in `packages/sdk`, `packages/authorization`, `apps/web`, or `services/orchestrator-api` without explicit approval

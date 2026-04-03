@@ -18,9 +18,9 @@ applyTo:
 
 Read before any work:
 
-- `docs/ai/context.md` (project-wide guardrails)
+- `docs/ai/context.md` (program index — single source of truth)
 - `docs/decisions/ADR-004-service-architecture-and-boundaries.md` (SDK boundary policy)
-- `docs/architecture.md` (contract strategy)
+- `docs/decisions/ADR-042-shared-sdk-strategy.md` (shared SDK boundaries)
 
 ## Responsibilities
 

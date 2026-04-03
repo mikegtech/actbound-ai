@@ -18,10 +18,12 @@ applyTo:
 
 Read before any work:
 
-- `docs/ai/context.md` (project-wide guardrails)
+- `docs/ai/context.md` (program index — single source of truth)
 - `docs/decisions/ADR-004-service-architecture-and-boundaries.md` (hexagonal architecture)
 - `docs/decisions/ADR-005-data-access-and-migrations.md` (data access policy)
 - `docs/architecture/service-layout.md` (layer structure and import rules)
+- `docs/architecture/enforcement-model.md` (guard-level enforcement pattern)
+- `docs/decisions/ADR-009-token-vault-usage-policy.md` (Token Vault boundary)
 
 ## Responsibilities
 
@@ -48,6 +50,13 @@ Follow the layer import rules from ADR-004 and `docs/architecture/service-layout
 3. **Migrations are per-service** (`services/orchestrator-api/migrations`), never in shared packages.
 4. **Redis integrations stay in `infrastructure`.** Domain and application interact via abstract interfaces.
 
+## Orchestrator Role Boundaries
+
+The orchestrator is a **composition and context-assembly service**, not a domain logic dumping ground.
+
+- **Does:** assemble authorization context, broker tokens, shape safe responses, compose downstream calls, expose permission/broker/delegated-access endpoints
+- **Does not:** own domain entities that belong in agent-service, implement agent execution logic, store domain state that should live in a dedicated service, make authorization decisions (delegates to `packages/authorization`)
+
 ## Do
 
 - Use `packages/authorization` for all policy evaluation
@@ -55,6 +64,7 @@ Follow the layer import rules from ADR-004 and `docs/architecture/service-layout
 - Use `TODO` markers for Auth0 Token Vault and real M2M exchange seams
 - Return safe metadata only — never expose raw tokens in API responses
 - Keep controllers thin — delegate to application services
+- Use `@RequirePermission` on every endpoint (ADR-019)
 
 ## Don't
 
@@ -63,6 +73,7 @@ Follow the layer import rules from ADR-004 and `docs/architecture/service-layout
 - Duplicate Zod schemas that belong in `packages/sdk`
 - Modify files in `packages/sdk`, `packages/authorization`, `apps/web`, or `services/agent-service` without explicit approval
 - Return raw token material in HTTP responses
+- Turn the orchestrator into a monolithic service — keep it focused on composition and context assembly
 
 ## Conventions
 

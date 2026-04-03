@@ -21,11 +21,8 @@ applyTo:
 
 Read before any work:
 
-- `docs/ai/context.md` (project-wide guardrails and current phase)
-- `docs/architecture.md` (system architecture)
-- `docs/architecture/service-layout.md` (hexagonal layout)
-- `docs/decisions/ADR-004-service-architecture-and-boundaries.md`
-- `docs/decisions/ADR-005-data-access-and-migrations.md`
+- `docs/ai/context.md` (program index — single source of truth for all phases, ADRs, and architecture)
+- `docs/decisions/ADR-046-documentation-adr-standard.md` (documentation and ADR conventions)
 
 ## Responsibilities
 
