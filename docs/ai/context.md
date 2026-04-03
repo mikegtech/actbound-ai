@@ -1,268 +1,543 @@
-# ActBound AI - AI Context
+# ActBound AI — Zero Trust Agent Platform — Program Index
 
-## Project Summary
+This is the single source of truth for the platform's architecture, decisions, implementation state, and operating rules. All AI agents and human engineers must read this before any work.
 
-ActBound AI lets users safely authorize AI agents to act on their behalf using Auth0 Token Vault. By combining delegated consent, scoped permissions, token protection, and auditability, it turns AI agents into secure operators of real APIs instead of uncontrolled credential consumers.
+---
 
-## Hackathon
+## 1. Program Overview
 
-Authorized to Act: AI Agents with Auth0
+**Name:** ActBound AI
 
-## Hard Requirements
+**Hackathon:** Authorized to Act: AI Agents with Auth0
 
-- Must use Auth0 Token Vault
-- Public code repository required
-- Public app/demo link required
-- Demo video must be under 3 minutes
-- Submission materials must be in English
-- Judges score equally on:
-  - Security Model
-  - User Control
-  - Technical Execution
-  - Design
-  - Potential Impact
-  - Insight Value
+**Purpose:** A secure platform that lets users safely authorize AI agents to act on their behalf. By combining delegated consent, scoped permissions, token protection, and auditability, it turns AI agents into secure operators of real APIs instead of uncontrolled credential consumers.
 
-## Architecture Direction
+**Judges score equally on:** Security Model, User Control, Technical Execution, Design, Potential Impact, Insight Value.
 
-- apps/web = React UI
-- services/orchestrator-api = external-facing orchestration service
-- services/agent-service = protected internal service
-- packages/authorization = central permission model and policy evaluation
-- packages/sdk = shared Zod schemas, DTOs, typed clients, OpenAPI generation
-- packages/ui = shared presentational components
-- packages/config = shared tooling configuration
+**Hard requirements:** Auth0 Token Vault, public code repository, public app/demo link, demo video under 3 minutes, English materials.
 
-## Architecture Principles
+---
 
-1. Backend authorization enforcement is the source of truth
-2. UI consumes permission decisions, not raw authorization rules
-3. Permission logic must be centralized and typed
-4. Orchestrator assembles consent, token, and authorization context
-5. Agent service re-enforces protected operations
-6. Shared Zod schemas are the contract source of truth
-7. Use zod-to-openapi to reduce DTO/OpenAPI duplication
-8. Keep the implementation lightweight and hackathon-friendly, but production-aware
+## 2. Core Architecture
 
-## Architecture Decisions Summary & Boundaries
+| Layer            | System                    | Responsibility                                |
+| ---------------- | ------------------------- | --------------------------------------------- |
+| Identity         | Auth0 (Pro)               | Authentication, JWT issuance, org context     |
+| Delegated Access | Auth0 Token Vault         | User-authorized third-party OAuth tokens only |
+| Secrets          | AWS Secrets Manager       | Platform secrets + automated rotation         |
+| Authorization    | OpenFGA + RBAC + ABAC     | Unified permission decisions                  |
+| Enforcement      | Backend services + CASL   | Backend is authoritative; CASL is advisory UX |
+| Agents           | Per-instance runtime      | Autonomous + delegated actions                |
+| Infrastructure   | AWS + VPS + Tailscale     | Networking, compute, isolation                |
+| Observability    | CloudWatch + CloudTrail   | Audit trails, debugging, detection            |
+| Resilience       | Backup + DR + fail-closed | Recovery, containment, break-glass            |
+| Enablement       | Shared SDKs + templates   | Consistency, reuse, guardrails                |
 
-To ensure the codebase scales cleanly across services without circular dependencies and tight coupling, explicit architectural guardrails are established:
+---
 
-- **Service Architecture Policy (`ADR-004`)**: NestJS backend services follow Hexagonal Architecture (Ports and Adapters) with strictly defined `domain`, `application`, `infrastructure`, and `presentation` directories and boundaries. See `docs/architecture/service-layout.md`.
-- **SDK Boundary Policy (`ADR-004`)**: `packages/sdk` is strictly framework-agnostic. It must have **zero** NestJS imports, **zero** Drizzle imports, and **zero** persistence logic. It acts as the pure host for shared Zod contracts and OpenAPI generation. `packages/authorization` has similar agnostic goals, minus minor NestJS integration seams.
-- **Data Access Policy (`ADR-005`)**: Drizzle ORM and Redis integrations are confined strictly to the `infrastructure` layers of respective backend services. Migrations are owned per-service, not in shared packages.
-- **Frontend Policy (`ADR-004`)**: `apps/web` is React-only and safely consumes typed contracts and clients from `packages/sdk`, avoiding leakage of backend logic.
+## 3. Repository Structure
 
-## Current Branch
-
-- Working branch: feat/actbound-foundation
-- Planned public branch: hackathon-public
-
-## Current Phase
-
-### Phase 1 - Foundation and Permission-Centric Scaffold
-
-Status: done
-
-GitHub local and pipeline security hardening is complete. Local git hooks (pre-commit, pre-push), CI workflows (lint, build, typecheck, secret scanning, CodeQL, Semgrep, dependency review, actionlint), supply-chain pinning, CODEOWNERS, and security documentation are in place. Branch protection and GitHub-level settings remain manual post-deploy items.
-
-### Phase 2 - Central Permission System
-
-Status: done
-
-The centralized permission system is complete. `packages/authorization` now owns the typed permission model and policy engine, `orchestrator-api` returns backend-issued permission decisions, `agent-service` re-checks protected operations, and the web UI consumes structured decision results without embedding policy rules.
-
-### Phase 3 - Token Broker and M2M Optimization
-
-Status: done
-
-The token broker foundation is complete. `services/orchestrator-api` now exposes broker status, preview, retrieval, and cache-inspection flows, uses Redis with an in-memory fallback, and returns safe token metadata only. Real Auth0 M2M exchange, Token Vault retrieval, and stronger production guardrails remain explicit TODO seams for later phases.
-
-### Phase 4 - Auth0 Token Vault Delegated Access
-
-Status: in-progress
-
-## Current Focus
-
-- Add explicit delegated-access models for provider connections, delegated grants, vault sessions, and consent summaries in the shared packages
-- Expose safe placeholder orchestrator endpoints for connections, consent preview, revocation, and vault session inspection without returning secrets
-- Connect delegated-access state to the token broker so delegated requests route through the delegated-access model instead of generic placeholders
-- Keep delegated-access and broker feature logic aligned with the documented service-layer boundaries while staying demo-ready
-- Surface connected accounts, consent state, step-up requirements, and revocation placeholders in the web UI using backend responses only
-- Keep Auth0 Token Vault APIs, delegated OAuth completion, and step-up authentication as explicit TODO seams
-
-## Definition of Done - Phase 4
-
-- `docs/ai/context.md` accurately marks Phase 3 complete and Phase 4 in progress
-- Shared delegated-access models exist for provider connections, grants, consent summaries, vault sessions, revocation intent, and sensitive-action markers
-- `services/orchestrator-api` exposes safe placeholder endpoints for connections, consent preview, revocation, and vault sessions
-- `packages/authorization` centrally evaluates delegated access, delegated token usage, revocation, and step-up-sensitive actions
-- The token broker understands delegated-access state and returns safe delegated metadata without exposing raw token material
-- `apps/web` renders backend-issued delegated-access and broker metadata without embedding policy rules
-- README and delegated-access documentation explain the architecture, Token Vault fit, and future Auth0 seams
-
-## Out of Scope for Phase 4
-
-- Real Auth0 Token Vault API calls and production delegated OAuth completion
-- Production-grade step-up authentication flows
-- Final provider-specific UX, revocation propagation, and long-lived session management
-- Final audit UX, submission polish, and demo packaging
-
-### Phase 1 Goals (Completed)
-
-- Scaffold monorepo
-- Create apps/web
-- Create services/orchestrator-api
-- Create services/agent-service
-- Create packages/authorization
-- Create packages/sdk
-- Create packages/ui
-- Add shared docs and README
-- Add Zod + zod-to-openapi foundation
-
-### Out of Scope
-
-- Final Auth0 Token Vault integration
-- Final demo media
-- Final polish for submission
-- Full production auth flows
-
-## Epics
-
-### EPIC-001 - Foundation Scaffold
-
-Status: done
-Goal: Establish the repo structure, tooling, docs, and baseline apps/services/packages.
-
-### EPIC-002 - Central Permission System
-
-Status: done
-Goal: Create typed resources, actions, policy context, and permission decision evaluation.
-
-### EPIC-003 - Token Broker and M2M Optimization
-
-Status: done
-Goal: Reduce Auth0 M2M token overuse through brokered issuance, caching, and reuse.
-
-### EPIC-004 - Auth0 Token Vault Delegated Access
-
-Status: in-progress
-Goal: Implement delegated user authorization and vault-managed token access for agent actions.
-
-### EPIC-005 - Auditability and User Control
-
-Status: planned
-Goal: Surface permissions, granted access, action history, and user-visible control points.
-
-### EPIC-006 - Hackathon Submission Readiness
-
-Status: planned
-Goal: Finalize story, diagrams, README, public branch, demo flow, and Devpost assets.
-
-## Progress Tracker
-
-### Done
-
-- Project name selected: ActBound AI
-- Elevator pitch drafted
-- Initial architecture direction decided
-- Monorepo scaffold completed
-- `apps/web`, `services/orchestrator-api`, and `services/agent-service` created
-- `packages/authorization`, `packages/sdk`, `packages/ui`, and `packages/config` created
-- Shared Zod + zod-to-openapi contract foundation implemented
-- Syncpack guard added for workspace dependency consistency
-- Local git hooks: pre-commit (secret scanning, lint, format, hygiene) and pre-push (typecheck)
-- CI workflows: lint/build/typecheck, CodeQL, dependency review, gitleaks, actionlint, Semgrep
-- Supply-chain hardening: third-party actions SHA-pinned, actionlint installer script SHA-pinned with fail-closed download, semgrep container version-pinned, persist-credentials disabled
-- CODEOWNERS for security-sensitive paths
-- Public-repo hygiene files present: `.github/CODEOWNERS`, `.env.example`
-- Security documentation: local-hooks.md, ci-security.md
-- AI guardrails documented in docs/ai/context.md
-- Phase 2 central permission system completed across authorization, orchestrator-api, agent-service, sdk contracts, and web UI
-- Phase 3 token broker foundation completed across authorization, orchestrator-api, sdk contracts, Redis fallback behavior, and web UI
-
-### In Progress
-
-- Phase 4 delegated-access foundation
-- Shared models for connected accounts, delegated grants, vault sessions, and consent preview
-- Token broker integration with delegated-access state and step-up-sensitive action checks
-
-### Next
-
-- Auth0 Token Vault delegated access production wiring
-- Auditability and user control refinement
-- Hackathon submission readiness
-
-## Repo-Wide AI Guardrails
-
-These rules apply to every AI agent and tool operating in this repo.
-
-### 1. No repo-wide write commands without explicit approval
-
-Never run `prettier --write .`, `eslint --fix .`, or any command that reformats or rewrites files across the entire repo. Only use these commands on explicitly named files within the current task scope.
-
-Acceptable:
-
-```bash
-pnpm exec prettier --write apps/web/src/App.tsx
-pnpm exec eslint --fix services/orchestrator-api/src/routes/health.ts
+```
+actbound-ai/
+├── apps/
+│   └── web/                          # React UI (Vite)
+├── services/
+│   ├── orchestrator-api/             # External-facing NestJS service
+│   └── agent-service/                # Internal NestJS service
+├── packages/
+│   ├── authorization/                # Policy engine (RBAC + ABAC + OpenFGA)
+│   ├── sdk/                          # Zod schemas, DTOs, typed clients, OpenAPI
+│   ├── ui/                           # Shared presentational components
+│   └── config/                       # Shared ESLint, Prettier, TSConfig
+├── docs/
+│   ├── ai/
+│   │   └── context.md                # THIS FILE — program index
+│   ├── architecture/                 # Architecture models
+│   ├── decisions/                    # ADRs (004–046)
+│   └── security/                     # Local hooks, CI security docs
+├── .github/
+│   ├── agents/                       # Copilot agent profiles
+│   ├── workflows/                    # CI/CD workflows
+│   └── CODEOWNERS                    # Security-sensitive path ownership
+├── .claude/
+│   └── claude.md                     # Claude Code multi-role config
+├── infra/                            # Infrastructure (IaC, future)
+└── scripts/                          # Setup and utility scripts
 ```
 
-Not acceptable without explicit human approval:
+---
 
-```bash
-pnpm exec prettier --write .
-pnpm exec eslint --fix .
+## 4. Architecture Documents
+
+| Document                                                                                   | Scope                                                   |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| [identity-trust-model.md](../architecture/identity-trust-model.md)                         | Auth0, JWTs, principal types, trust boundaries          |
+| [secrets-rotation-model.md](../architecture/secrets-rotation-model.md)                     | Secrets Manager, naming, retrieval, rotation            |
+| [authorization-model.md](../architecture/authorization-model.md)                           | RBAC, ABAC, OpenFGA, decision flow                      |
+| [enforcement-model.md](../architecture/enforcement-model.md)                               | Guards, CASL, agent enforcement, observability          |
+| [agent-runtime-security.md](../architecture/agent-runtime-security.md)                     | Agent identity, delegation, tools, secrets, kill-switch |
+| [infrastructure-security-topology.md](../architecture/infrastructure-security-topology.md) | VPCs, subnets, Tailscale, VPS, home network             |
+| [security-observability.md](../architecture/security-observability.md)                     | Event taxonomy, correlation, alerting, retention        |
+| [resilience-recovery.md](../architecture/resilience-recovery.md)                           | Backup, recovery ordering, playbooks, break-glass       |
+| [security-enablement.md](../architecture/security-enablement.md)                           | SDKs, templates, standards, guardrails, workflow        |
+| [service-layout.md](../architecture/service-layout.md)                                     | Hexagonal architecture layer rules                      |
+
+---
+
+## 5. ADR Index
+
+### Foundation (004–005)
+
+| ADR | Title                                                                                              |
+| --- | -------------------------------------------------------------------------------------------------- |
+| 004 | [Service Architecture and Boundaries](../decisions/ADR-004-service-architecture-and-boundaries.md) |
+| 005 | [Data Access and Migrations](../decisions/ADR-005-data-access-and-migrations.md)                   |
+
+### Identity (006–009)
+
+| ADR | Title                                                                        |
+| --- | ---------------------------------------------------------------------------- |
+| 006 | [Token Strategy](../decisions/ADR-006-token-strategy.md)                     |
+| 007 | [Agent Identity Model](../decisions/ADR-007-agent-identity-model.md)         |
+| 008 | [Service Trust Model](../decisions/ADR-008-service-trust-model.md)           |
+| 009 | [Token Vault Usage Policy](../decisions/ADR-009-token-vault-usage-policy.md) |
+
+### Secrets (010–013)
+
+| ADR | Title                                                                                                      |
+| --- | ---------------------------------------------------------------------------------------------------------- |
+| 010 | [Secrets Manager as Source of Truth](../decisions/ADR-010-secrets-manager-source-of-truth.md)              |
+| 011 | [Secret Naming Convention](../decisions/ADR-011-secret-naming-convention.md)                               |
+| 012 | [Rotation Strategy Model](../decisions/ADR-012-rotation-strategy-model.md)                                 |
+| 013 | [Secrets Manager vs Token Vault Boundary](../decisions/ADR-013-secrets-manager-vs-token-vault-boundary.md) |
+
+### Authorization (014–017)
+
+| ADR | Title                                                                                      |
+| --- | ------------------------------------------------------------------------------------------ |
+| 014 | [RBAC vs ABAC vs OpenFGA Separation](../decisions/ADR-014-rbac-abac-openfga-separation.md) |
+| 015 | [OpenFGA Model Design](../decisions/ADR-015-openfga-model-design.md)                       |
+| 016 | [Authorization Decision Flow](../decisions/ADR-016-authorization-decision-flow.md)         |
+| 017 | [IdP to OpenFGA Sync Strategy](../decisions/ADR-017-idp-openfga-sync-strategy.md)          |
+
+### Enforcement (018–021)
+
+| ADR | Title                                                                                          |
+| --- | ---------------------------------------------------------------------------------------------- |
+| 018 | [Centralized Authorization Service](../decisions/ADR-018-centralized-authorization-service.md) |
+| 019 | [Backend Enforcement Strategy](../decisions/ADR-019-backend-enforcement-strategy.md)           |
+| 020 | [CASL Integration Model](../decisions/ADR-020-casl-integration-model.md)                       |
+| 021 | [Fail-Closed Authorization Policy](../decisions/ADR-021-fail-closed-policy.md)                 |
+
+### Agent Security (022–026)
+
+| ADR | Title                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------ |
+| 022 | [Agent Identity Strategy](../decisions/ADR-022-agent-identity-strategy.md)                       |
+| 023 | [Delegated vs Independent Execution](../decisions/ADR-023-delegated-vs-independent-execution.md) |
+| 024 | [Tool Access Control Model](../decisions/ADR-024-tool-access-control-model.md)                   |
+| 025 | [Agent Secret Access Boundary](../decisions/ADR-025-agent-secret-access-boundary.md)             |
+| 026 | [Agent Audit and Attribution](../decisions/ADR-026-agent-audit-attribution.md)                   |
+
+### Infrastructure (027–031)
+
+| ADR | Title                                                                                    |
+| --- | ---------------------------------------------------------------------------------------- |
+| 027 | [Environment Isolation Strategy](../decisions/ADR-027-environment-isolation-strategy.md) |
+| 028 | [VPS Role in Platform](../decisions/ADR-028-vps-role.md)                                 |
+| 029 | [Tailscale Private Access Model](../decisions/ADR-029-tailscale-private-access.md)       |
+| 030 | [Public vs Private Service Exposure](../decisions/ADR-030-service-exposure-policy.md)    |
+| 031 | [Home Network Trust Boundary](../decisions/ADR-031-home-network-trust-boundary.md)       |
+
+### Observability (032–036)
+
+| ADR | Title                                                                                    |
+| --- | ---------------------------------------------------------------------------------------- |
+| 032 | [Observability Architecture](../decisions/ADR-032-observability-architecture.md)         |
+| 033 | [Event Taxonomy Standard](../decisions/ADR-033-event-taxonomy-standard.md)               |
+| 034 | [Authorization Decision Logging](../decisions/ADR-034-authorization-decision-logging.md) |
+| 035 | [Agent Observability Model](../decisions/ADR-035-agent-observability-model.md)           |
+| 036 | [Log Retention Strategy](../decisions/ADR-036-log-retention-strategy.md)                 |
+
+### Resilience (037–041)
+
+| ADR | Title                                                                            |
+| --- | -------------------------------------------------------------------------------- |
+| 037 | [Backup Strategy](../decisions/ADR-037-backup-strategy.md)                       |
+| 038 | [Recovery Ordering Model](../decisions/ADR-038-recovery-ordering.md)             |
+| 039 | [Secret Compromise Response](../decisions/ADR-039-secret-compromise-response.md) |
+| 040 | [OpenFGA Failure Policy](../decisions/ADR-040-openfga-failure-policy.md)         |
+| 041 | [Break-Glass Access Model](../decisions/ADR-041-break-glass-access.md)           |
+
+### Enablement (042–046)
+
+| ADR | Title                                                                                |
+| --- | ------------------------------------------------------------------------------------ |
+| 042 | [Shared SDK Strategy](../decisions/ADR-042-shared-sdk-strategy.md)                   |
+| 043 | [Service Template Standard](../decisions/ADR-043-service-template-standard.md)       |
+| 044 | [Agent Template Standard](../decisions/ADR-044-agent-template-standard.md)           |
+| 045 | [Guardrail Enforcement Policy](../decisions/ADR-045-guardrail-enforcement-policy.md) |
+| 046 | [Documentation and ADR Standard](../decisions/ADR-046-documentation-adr-standard.md) |
+
+---
+
+## 6. Epic Status Tracker
+
+| #   | Epic                        | Status   |
+| --- | --------------------------- | -------- |
+| 1   | Identity Foundation         | Complete |
+| 2   | Secrets Platform            | Complete |
+| 3   | Authorization Control Plane | Complete |
+| 4   | Application Enforcement     | Complete |
+| 5   | Agent Security              | Complete |
+| 6   | Secure Infrastructure       | Complete |
+| 7   | Security Observability      | Complete |
+| 8   | Security Resilience         | Complete |
+| 9   | Security Enablement         | Complete |
+
+---
+
+## 7. Cross-Epic Design Principles
+
+These must never be violated.
+
+### Identity
+
+- Every request has a principal. No anonymous internal access.
+- Three principal types: `user`, `service`, `agent`. Each has its own Auth0 application.
+- Custom claims use the `https://actbound.ai/` namespace.
+
+### Secrets
+
+- No hardcoded secrets. All secrets in AWS Secrets Manager.
+- Token Vault is ONLY for user-delegated external OAuth tokens.
+- All secrets rotate safely. Services use 5-minute cache TTL + retry-on-auth-failure.
+
+### Authorization
+
+- Backend is the source of truth. CASL is advisory UX only.
+- RBAC (roles from JWT) ≠ ABAC (context attributes) ≠ OpenFGA (relationships). Strict separation.
+- Every permission maps to exactly one layer. No overlap.
+- Max 5 system roles. Use OpenFGA for granularity beyond roles.
+
+### Agents
+
+- Agents are first-class principals with per-instance identity.
+- No shared or global agent credentials.
+- Delegated actions require intersection of agent capability + user consent + user authorization.
+- Kill-switch: disable Auth0 M2M app + purge OpenFGA tuples.
+
+### Infrastructure
+
+- Explicit trust boundaries. Only orchestrator-api is public.
+- Environments isolated via separate VPCs, IAM, and data stores.
+- Tailscale is admin overlay, not production runtime dependency.
+- Home network is untrusted for production.
+
+### Observability
+
+- Every authorization decision is logged (allow and deny).
+- Structured JSON events with `requestId` and `workflowId` correlation.
+- Event taxonomy: `<domain>.<action>.<result>`.
+- Never log secret values, tokens, or PII beyond `sub`.
+
+### Resilience
+
+- Fail closed. No fail-open path for authorization.
+- Recovery order: Infrastructure → Identity → Secrets → AuthZ → App → Agents.
+- Break-glass: offline credentials, dual approval, post-use rotation.
+
+---
+
+## 8. Authorization Model Summary
+
+| Layer   | Purpose                      | Storage                 | Queried via                    |
+| ------- | ---------------------------- | ----------------------- | ------------------------------ |
+| RBAC    | Coarse role gating           | Auth0 JWT claims        | JWT parsing (no external call) |
+| ABAC    | Context attributes           | Runtime (not persisted) | Request context assembly       |
+| OpenFGA | Resource-level relationships | Tuple store             | OpenFGA Check API              |
+
+### Enforcement Flow
+
+```
+1. Validate identity (Auth0 JWT)
+2. RBAC check (from JWT claims — fast, no external call)
+3. ABAC evaluation (from request context — no persistence)
+4. OpenFGA check (relationship query — external call)
+5. Final decision (allow or deny with reasons)
+6. Log + trace (structured audit event)
 ```
 
-### 2. Only modify files in the current task scope
+---
 
-Do not touch files outside the scope of the task you were given. If a hook or tool reports issues in unrelated files, report the issue — do not fix it unless asked.
+## 9. Identity to Authorization Contract
 
-### 3. Hooks operate on staged or targeted files
+### JWT must include
 
-Local git hooks (pre-commit, pre-push) must run against staged files or explicitly targeted files only. They must not trigger repo-wide scans or rewrites during normal development.
+- `sub` — principal identifier
+- `aud` — API audience (`https://api.actbound.ai`)
+- `https://actbound.ai/principal_type` — `user`, `service`, or `agent`
+- `https://actbound.ai/roles` — role array
+- `https://actbound.ai/tenant_id` — tenant boundary
 
-### 4. Local hooks are fast scoped checks; CI is the authority
+### JWT must NOT include
 
-Local hooks are the first line of defense. They catch obvious issues early and keep the developer workflow fast. CI is the authoritative full-repo enforcement layer. Do not add checks to local hooks that belong in CI.
+- Fine-grained permissions (resolved at runtime via OpenFGA)
+- Resource ownership data
+- PII beyond `sub`
+- Secrets or API keys
 
-### 5. No reformatting unrelated files to pass a commit
+---
 
-If committing your changes causes a hook failure in unrelated files (docs, config, lockfiles, agent files, etc.), do not reformat or rewrite those files to make the hook pass. Instead:
+## 10. Secrets Boundary Model
 
-- Ensure the hook is scoped to staged files only
-- If the hook is correctly scoped and the failure is in a file you changed, fix it
-- If the failure is in a file you did not change, stop and report
+| System              | Purpose                                                      | Owner    |
+| ------------------- | ------------------------------------------------------------ | -------- |
+| Auth0 Token Vault   | User-delegated external OAuth tokens (Google, Slack, GitHub) | User     |
+| AWS Secrets Manager | Platform secrets (DB creds, API keys, M2M secrets)           | Platform |
 
-### 6. Stop and report on broad failures
+**Decision rule:** Who owns the credential? Platform → Secrets Manager. User (delegated via OAuth) → Token Vault. No exceptions.
 
-If a hook failure would require changing files outside your task scope, stop and report the issue to the developer. Do not apply broad fixes. Explain what failed, which files are affected, and what the developer should decide.
+---
 
-### 7. Public-branch hygiene and secret prevention are mandatory
+## 11. Agent Execution Model
 
-This repo will become public. Every commit must be clean of:
+| Mode        | Description                         | `on_behalf_of` claim   |
+| ----------- | ----------------------------------- | ---------------------- |
+| Independent | Agent acts as itself (system tasks) | Absent                 |
+| Delegated   | Agent acts on behalf of a user      | Present (user's `sub`) |
 
-- secrets, tokens, API keys, credentials
-- .env files (except .env.example)
-- private keys and certificates
-- internal-only endpoints or references
+### Delegation intersection rule
 
-These controls are non-negotiable and enforced at every layer (local hooks, CI, GitHub settings).
+An agent can only do what the intersection of these three allows:
 
-## Implementation Guidance for AI Coding Tools
+1. Agent's own capability (OpenFGA `executor` tuples)
+2. User's consent (delegation scopes)
+3. User's own authorization (user's OpenFGA relations)
 
-- Prefer TypeScript
-- Keep files small and explicit
-- Do not place permission logic directly in React components
-- Do not duplicate DTO definitions when shared Zod schemas can be reused
-- Use TODO markers for Auth0 integration points
-- Keep naming consistent with ActBound AI terminology
-- Prefer placeholders with clean interfaces over fake complexity
+---
 
-## Public Repo Guidance
+## 12. IdP to OpenFGA Sync Model
 
-- No secrets
-- No internal-only credentials or endpoints
+```
+Auth0 → EventBridge → Sync Lambda → OpenFGA
+                                       │
+                                       ▼
+                                 SQS Dead Letter Queue
+```
+
+**Sync rule:** Only sync relationships (org membership, delegation). Never sync identity profiles, roles, or PII.
+
+**Reconciliation:** Daily Lambda compares Auth0 org membership to OpenFGA tuples and fixes drift.
+
+---
+
+## 13. Observability Model
+
+All events must include:
+
+| Field                   | Purpose                               |
+| ----------------------- | ------------------------------------- |
+| `requestId`             | Per-request correlation               |
+| `workflowId`            | Multi-step agent workflow correlation |
+| `subject.sub`           | Who made the request                  |
+| `subject.principalType` | User, service, or agent               |
+| `permission`            | What was requested                    |
+| `resource`              | Which resource                        |
+| `decision.allowed`      | Result                                |
+| `decision.reasons`      | Why (always populated)                |
+
+### Log retention
+
+- Hot: 90 days (CloudWatch Logs)
+- Warm: 1 year (S3 Standard, queryable via Athena)
+- Cold: 3+ years (S3 Glacier)
+
+---
+
+## 14. Resilience Model
+
+### Must support
+
+- Secret compromise (immediate rotation, 5-min recovery)
+- Identity compromise (revoke sessions/tokens, disable M2M app)
+- OpenFGA outage (fail-closed, RBAC/ABAC still work)
+- Infrastructure failure (redeploy from IaC + restore data)
+- Agent compromise (kill-switch: disable + purge + remove)
+
+### Recovery order
+
+```
+1. Infrastructure (Terraform apply)
+2. Identity (verify Auth0 config)
+3. Secrets (verify access, rotate if compromised)
+4. Authorization (deploy model, restore tuples, reconcile)
+5. Application (deploy services, verify health)
+6. Agents (re-provision, restore delegation)
+```
+
+---
+
+## 15. Skills Backlog
+
+### Authorization
+
+- `skill.authz.evaluate.request` — full RBAC + ABAC + OpenFGA evaluation
+- `skill.authz.log.decision` — structured authorization decision logging
+- `skill.authz.design.openfga-model` — design OpenFGA types and relations
+- `skill.authz.sync.idp-to-openfga` — Auth0 → OpenFGA event sync
+
+### Secrets
+
+- `skill.secrets.retrieve.aws` — rotation-safe retrieval with caching
+- `skill.secrets.rotate.emergency` — immediate rotation for compromised secrets
+- `skill.secrets.audit.access` — log secret access events
+
+### Agents
+
+- `skill.agent.secure.runtime-pattern` — standard agent runtime security setup
+- `skill.agent.delegate.user-action` — delegated execution with intersection validation
+- `skill.agent.authorize.tool-call` — tool authorization with risk categories
+- `skill.agent.kill-switch` — immediate agent shutdown procedure
+- `skill.agent.audit.execution` — structured agent audit events
+- `skill.agent.retrieve.secrets.scoped` — brokered secret access for agents
+
+### Infrastructure
+
+- `skill.aws.design.vpc-isolation` — VPC with public/private subnet separation
+- `skill.aws.secure.egress-pattern` — controlled outbound access
+- `skill.tailscale.design.private-admin-access` — Tailscale ACLs and subnet routers
+- `skill.vps.define.trust-boundary` — VPS role and access restrictions
+- `skill.infra.segment.environment` — per-environment isolation
+
+### Observability
+
+- `skill.observability.design.event-taxonomy` — structured event types
+- `skill.observability.propagate.correlation-id` — requestId/workflowId propagation
+- `skill.agent.trace.execution` — multi-step workflow tracing
+
+### Resilience
+
+- `skill.resilience.backup.strategy` — backup requirements for new components
+- `skill.resilience.restore.system` — restore from backup with validation
+- `skill.resilience.test.recovery` — recovery drill execution
+- `skill.identity.revoke.compromise` — identity compromise response
+
+### Enablement
+
+- `skill.enablement.build.service-template` — scaffold secure NestJS service
+- `skill.enablement.build.agent-template` — scaffold secure agent runtime
+- `skill.enablement.apply.authz-sdk` — integrate authorization into a service
+- `skill.enablement.apply.secrets-sdk` — integrate rotation-safe secret retrieval
+- `skill.enablement.define.permission-standard` — define new permission per conventions
+- `skill.enablement.write.adr` — write ADR per standard format
+
+### CASL
+
+- `skill.casl.build.ability-factory` — build CASL abilities from backend permissions
+
+---
+
+## 16. Implementation Phases
+
+### Phase 1 — Foundation (Complete)
+
+Monorepo scaffold, apps/web, services, packages, CI/CD, git hooks, supply-chain hardening, CODEOWNERS, security documentation.
+
+### Phase 2 — Central Permission System (Complete)
+
+Typed permission model, policy engine, backend-issued decisions, web UI consumption.
+
+### Phase 3 — Token Broker and M2M Optimization (Complete)
+
+Broker status/preview/retrieval, Redis with fallback, safe metadata only.
+
+### Phase 4 — Auth0 Token Vault Delegated Access (In Progress)
+
+Delegated-access models, provider connections, consent preview, vault sessions, step-up markers, Token Vault TODO seams.
+
+### Phase 5 — Auditability and User Control (Planned)
+
+User-visible permissions, action history, connected accounts, revocation UI.
+
+### Phase 6 — Hackathon Submission Readiness (Planned)
+
+README, diagrams, demo flow, public branch, Devpost assets, video.
+
+---
+
+## 17. Architecture Decisions Summary
+
+### Service Architecture (ADR-004)
+
+NestJS services use hexagonal architecture: `domain`, `application`, `infrastructure`, `presentation`. Strict layer import rules.
+
+### SDK Boundary (ADR-004)
+
+`packages/sdk` has zero NestJS, zero Drizzle, zero persistence. Pure Zod + TypeScript + OpenAPI.
+
+### Data Access (ADR-005)
+
+Drizzle ORM confined to `infrastructure` layers. Per-service migrations. Repository pattern with domain interfaces.
+
+### Token Strategy (ADR-006)
+
+15-min user access tokens, 1-hour M2M tokens. RS256 signing. Custom claims via `https://actbound.ai/` namespace. Tokens carry identity and role, not permissions.
+
+### Agent Identity (ADR-007, ADR-022)
+
+Per-agent-instance Auth0 M2M application. Full traceability via `sub` + `agent_instance_id` + `on_behalf_of`.
+
+### Token Vault Boundary (ADR-009, ADR-013)
+
+Token Vault = user-delegated external tokens. Secrets Manager = platform secrets. No exceptions. Separate code paths.
+
+### Fail-Closed (ADR-021, ADR-040)
+
+All authorization failures result in denial. No fail-open. No cached OpenFGA results as fallback.
+
+---
+
+## 18. Definition of Done (Global)
+
+A feature is NOT complete unless:
+
+- Identity path defined and tested
+- Authorization path defined and tested
+- Secrets usage defined (Secrets Manager or Token Vault, never both for the same credential)
+- Rotation impact considered (will rotation break this feature?)
+- Observability included (audit events emitted)
+- Failure modes handled (what happens when dependencies are down?)
+- Documentation updated (context.md progress tracker, ADR if new pattern)
+
+---
+
+## 19. AI Agent Operating Rules
+
+These apply to every AI agent and tool operating in this repo.
+
+1. **No repo-wide write commands** without explicit approval (`prettier --write .`, `eslint --fix .`).
+2. **Only modify files in the current task scope.** Report issues in unrelated files — do not fix them.
+3. **Hooks operate on staged or targeted files only.** No repo-wide scans during development.
+4. **Local hooks are fast scoped checks. CI is the authority.**
+5. **No reformatting unrelated files to pass a commit.** If a hook fails on a file you didn't change, stop and report.
+6. **Stop and report on broad failures.** Do not apply broad fixes.
+7. **Public-branch hygiene and secret prevention are mandatory.** No secrets, tokens, API keys, or credentials in any commit.
+
+---
+
+## 20. Auth0 Tenant
+
+- Tenant: `dev-6az71xw7wqwtmp0q.us.auth0.com`
+- MCP access: configured in `.mcp.json` via `@auth0/auth0-mcp-server`
+- ActBound-specific applications and API to be created per `docs/architecture/identity-trust-model.md` section 8
+
+---
+
+## 21. Public Repo Guidance
+
+- No secrets, no internal-only credentials or endpoints
 - Keep docs clear and judge-friendly
 - Public branch will be created later with no history
+- Working branch: `feat/actbound-foundation`
+- Planned public branch: `hackathon-public`
