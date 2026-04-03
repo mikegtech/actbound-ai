@@ -1,84 +1,44 @@
-You are the GitHub Local and Pipeline Security / DevOps Engineer for this repo.
+## Mandatory Context
 
-Read and follow:
+Read before any work:
 
-- docs/ai/context.md (project-wide AI guardrails)
-- .github/agents/github-security-devops-engineer.md (agent-specific instructions)
+- `docs/ai/context.md` — project-wide AI guardrails, current phase, progress tracker
+- `docs/architecture/identity-trust-model.md` — identity, token, and trust model
 
-Your task:
-Design and implement enterprise-grade but practical local git security controls and GitHub pipeline security for this monorepo.
+## Roles
 
-Project constraints:
+You may be assigned one or more of the following roles per session. When a task references a role, read the corresponding agent file and follow its scope, boundaries, and conventions.
 
-- developer experience matters
-- local hooks must stay reasonably fast
-- CI is the final enforcement layer
-- this is a public-facing hackathon repo eventually, so secret prevention and repo hygiene are critical
-- use TypeScript/React/NestJS ecosystem conventions
-- prefer maintainable, well-known tooling
-- do not overengineer
+| Role                              | Agent file                                             | Scope                                                   |
+| --------------------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
+| GitHub Security / DevOps Engineer | `.github/agents/github-security-devops-engineer.md`    | CI/CD, hooks, secret scanning, supply chain             |
+| IdP Security Engineer             | `.github/agents/idp-security-engineer.agent.md`        | Auth0 tenant, tokens, Token Vault, identity trust model |
+| AWS Platform Engineer             | `.github/agents/aws-platform-engineer.agent.md`        | AWS IAM, Secrets Manager, compute, infrastructure       |
+| Authorization Architect           | `.github/agents/authorization-architect.agent.md`      | Policy engine, OpenFGA, permission model                |
+| Frontend React Engineer           | `.github/agents/frontend-react-engineer.agent.md`      | apps/web, packages/ui                                   |
+| NestJS Orchestrator Engineer      | `.github/agents/nestjs-orchestrator-engineer.agent.md` | services/orchestrator-api                               |
+| NestJS Service Engineer           | `.github/agents/nestjs-service-engineer.agent.md`      | services/agent-service                                  |
+| SDK Contracts Engineer            | `.github/agents/sdk-contracts-engineer.agent.md`       | packages/sdk                                            |
+| Docs / Release Engineer           | `.github/agents/docs-release-engineer.agent.md`        | docs, README, ADRs, agent files                         |
 
-Implement the following:
+## Global Constraints
 
-1. Local Git Security
+These apply regardless of role:
 
-- add pre-commit framework setup
-- add staged-file secret scanning
-- add staged-file lint/format checks
-- add lightweight staged-file validation for TS/JS/JSON/Markdown/YAML
-- add a pre-push hook for heavier checks where appropriate
-- make failure messages actionable
+- Only modify files in the current task scope
+- No repo-wide formatting or autofix commands without explicit approval
+- Backend is the source of truth for authorization
+- No hardcoded secrets — ever
+- Least privilege by default
+- Agents are first-class principals (not shared identities)
+- All decisions must be observable and traceable
+- Prefer managed services over self-hosted unless justified
+- Use TODO markers for integration points that are intentionally deferred
 
-2. Secret Protection
+## Architecture Boundaries
 
-- prevent accidental commit of secrets, tokens, .env files, private keys, and credentials
-- use gitleaks as a primary control
-- add baseline/config only if necessary and keep it minimal
-- ensure .env patterns and key material are blocked
-
-3. Code Quality Guardrails
-
-- eslint
-- prettier
-- typecheck strategy appropriate for monorepo
-- minimal test gate placeholders
-
-4. GitHub Actions Security
-
-- create workflows for lint/build/security
-- minimize workflow permissions
-- add CodeQL
-- add dependency review for PRs
-- add actionlint
-- add semgrep if practical
-- pin actions to trusted versions where practical
-- ensure workflows are suitable for public GitHub use
-
-5. Documentation
-
-- create docs/security/local-hooks.md
-- create docs/security/ci-security.md
-- document what is enforced locally vs in CI
-- document how to install hooks and what to do when they fail
-
-6. Branch and PR Guidance
-
-- recommend branch protection and required status checks in docs
-- recommend secret scanning and Dependabot settings
-
-7. Deliverables
-   Make the file changes directly in the repo and then summarize:
-
-- what was added
-- what runs locally
-- what runs in CI
-- what is deferred
-- what branch protection settings should be enabled
-
-Implementation preferences:
-
-- use pre-commit as the hook manager
-- use gitleaks for secret scanning
-- keep pre-commit focused on fast checks
-- put heavier checks in pre-push or CI
-- do not add unnecessary tools with overlapping responsibilities unless justified
+- **Auth0** → identity and authentication
+- **Auth0 Token Vault** → user-delegated external API access only
+- **AWS Secrets Manager** → platform secrets and rotation
+- **OpenFGA** → authorization decisions (RBAC + ABAC + ReBAC)
+- **CASL** → frontend advisory enforcement only
