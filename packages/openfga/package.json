@@ -1,0 +1,14 @@
+{
+  "name": "@actbound/openfga",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "deploy-model": "tsx src/scripts/deploy-model.ts",
+    "seed-tuples": "tsx src/scripts/seed-tuples.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@openfga/sdk": "^0.8.0",
+    "yaml": "^2.7.0"
+  }
+}

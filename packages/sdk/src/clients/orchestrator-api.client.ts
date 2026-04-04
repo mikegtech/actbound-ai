@@ -14,6 +14,7 @@ import {
   ConsentSummaryListSchema,
   HealthStatusSchema,
   PermissionDecisionListSchema,
+  PolicyViewListSchema,
   ProviderConnectionListSchema,
   RevocationIntentSchema,
   RevokeConnectionResultSchema,
@@ -111,6 +112,10 @@ export class OrchestratorApiClient extends ApiClientBase {
 
   getMeControlSummary() {
     return this.get("/me/control-summary", UserControlSummarySchema);
+  }
+
+  getPolicies() {
+    return this.get("/policies", PolicyViewListSchema);
   }
 
   getTokenBrokerStatus() {

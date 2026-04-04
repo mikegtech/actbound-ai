@@ -10,7 +10,9 @@
   "dependencies": {
     "@actbound/sdk": "workspace:*",
     "@actbound/ui": "workspace:*",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@auth0/auth0-react": "^2.16.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.14.0"
   }
 }

@@ -456,13 +456,13 @@ Broker status/preview/retrieval, Redis with fallback, safe metadata only.
 
 Delegated-access models, provider connections, consent preview, vault sessions, step-up markers, Token Vault TODO seams. Auth0 dev/hackathon tenant provisioned (actbound-web, actbound-api, actbound-m2m, token enrichment actions).
 
-### Phase 5 — Auditability and User Control (In Progress)
+### Phase 5 — Auditability and User Control (Complete)
 
-User-visible permissions, action history, connected accounts, revocation UI, audit trail, decision explanations.
+Shared audit models (AuditEvent, ActivityTimeline, UserControlSummary), orchestrator endpoints (GET /me/activity, GET /me/control-summary, enriched GET /audit-events), authorization evaluation for audit visibility (viewer role added), web dashboard with User Control and Activity Timeline panels, demo-seeded activity events.
 
-### Phase 6 — Hackathon Submission Readiness (Planned)
+### Phase 6 — Hackathon Submission Readiness (In Progress)
 
-README, diagrams, demo flow, public branch, Devpost assets, video.
+README polish, demo flow, video script, Devpost description draft, judging criteria mapping, submission checklist. Hackathon docs at `docs/hackathon/`.
 
 ---
 

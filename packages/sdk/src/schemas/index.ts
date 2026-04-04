@@ -6,6 +6,7 @@ export * from "./consent-grant";
 export * from "./delegated-access";
 export * from "./listing";
 export * from "./permission-decision";
+export * from "./policy-view";
 export * from "./responses";
 export * from "./scoped-token-request";
 export * from "./standard-api-error";

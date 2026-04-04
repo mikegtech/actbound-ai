@@ -1,4 +1,39 @@
 services:
+  postgres:
+    image: postgres:15
+    container_name: actbound-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openfga
+      POSTGRES_PASSWORD: openfga
+      POSTGRES_DB: openfga
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  openfga:
+    image: openfga/openfga:latest
+    container_name: actbound-openfga
+    depends_on:
+      - postgres
+    command: >
+      run
+      --datastore-engine postgres
+      --datastore-uri postgres://openfga:openfga@postgres:5432/openfga?sslmode=disable
+    ports:
+      - "8180:8080" # HTTP API
+      - "3050:3000" # Playground UI
+    environment:
+      OPENFGA_PLAYGROUND_ENABLED: "true"
+      OPENFGA_LOG_FORMAT: json
+      OPENFGA_LOG_LEVEL: info
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7.4-alpine
     container_name: actbound-redis
@@ -8,5 +43,36 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes
 
+  orchestrator-api:
+    build:
+      context: .
+      dockerfile: services/orchestrator-api/Dockerfile
+    container_name: actbound-orchestrator
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      REDIS_URL: redis://redis:6379
+      OPENFGA_API_URL: http://openfga:8080
+      # Note: internal service-to-service uses container port 8080, not the host-mapped 8180
+      ORCHESTRATOR_CORS_ORIGINS: http://localhost:5173,http://localhost
+    depends_on:
+      - redis
+      - openfga
+      - postgres
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_ORCHESTRATOR_API_URL: http://localhost:3001
+    container_name: actbound-web
+    ports:
+      - "5173:80"
+    depends_on:
+      - orchestrator-api
+
 volumes:
+  postgres_data:
   redis-data:

@@ -1,0 +1,42 @@
+model
+  schema 1.1
+
+# ─── Organization ────────────────────────────────────────────
+# The tenant boundary. All resource access flows through org membership.
+type organization
+  relations
+    define admin: [user, agent]
+    define member: [user, agent] or admin
+
+# ─── Resource ────────────────────────────────────────────────
+# A generic protected resource within an organization.
+# Access is granted directly, or inherited from org membership.
+type resource
+  relations
+    define org: [organization]
+    define owner: [user]
+    define editor: [user, agent] or owner or admin from org
+    define viewer: [user, agent] or editor or member from org
+
+# ─── Agent Action ────────────────────────────────────────────
+# Represents a specific action an agent can execute.
+# Requires BOTH an executor (agent) AND a delegator (user).
+# This enforces the delegation intersection rule:
+#   agent capability + user delegation = can_execute
+type agent_action
+  relations
+    define org: [organization]
+    define executor: [agent]
+    define delegator: [user]
+    define can_execute: executor and delegator
+    define can_preview: [user, agent] or can_execute or member from org
+
+# ─── User ────────────────────────────────────────────────────
+# Represents a human user. Identity comes from Auth0 (sub claim).
+# OpenFGA stores relationships, not profile data.
+type user
+
+# ─── Agent ───────────────────────────────────────────────────
+# Represents an AI agent instance. Per-instance identity (ADR-007).
+# Each agent has its own Auth0 M2M application.
+type agent

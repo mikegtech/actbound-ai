@@ -1,0 +1,54 @@
+# Example tuples for local development and testing.
+# These represent realistic authorization relationships for the demo scenario.
+#
+# User IDs match the Auth0 dev setup (docs/auth0-setup.md).
+# Agent IDs match the per-instance identity model (ADR-007).
+
+tuples:
+  # ── Organization membership ──────────────────────────────
+  - user: "user:alice"
+    relation: "admin"
+    object: "organization:acme"
+
+  - user: "user:bob"
+    relation: "member"
+    object: "organization:acme"
+
+  - user: "agent:research-001"
+    relation: "member"
+    object: "organization:acme"
+
+  # ── Resource access (via org) ────────────────────────────
+  - user: "organization:acme"
+    relation: "org"
+    object: "resource:project-alpha"
+
+  - user: "user:alice"
+    relation: "owner"
+    object: "resource:project-alpha"
+
+  - user: "organization:acme"
+    relation: "org"
+    object: "resource:dataset-sales-q1"
+
+  # ── Direct resource access ───────────────────────────────
+  - user: "user:bob"
+    relation: "editor"
+    object: "resource:dataset-sales-q1"
+
+  - user: "agent:research-001"
+    relation: "viewer"
+    object: "resource:dataset-sales-q1"
+
+  # ── Agent action delegation ──────────────────────────────
+  - user: "organization:acme"
+    relation: "org"
+    object: "agent_action:valuation-reconcile"
+
+  - user: "agent:research-001"
+    relation: "executor"
+    object: "agent_action:valuation-reconcile"
+
+  - user: "user:alice"
+    relation: "delegator"
+    object: "agent_action:valuation-reconcile"

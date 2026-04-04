@@ -9,6 +9,7 @@ coverage
 
 # Generated
 docs/openapi
+.openfga-model-id
 
 # OS
 .DS_Store

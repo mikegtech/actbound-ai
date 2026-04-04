@@ -15,6 +15,7 @@ import {
   ConsentSummaryListSchema,
   HealthStatusSchema,
   PermissionDecisionListSchema,
+  PolicyViewListSchema,
   ProviderConnectionListSchema,
   RevocationIntentSchema,
   RevokeConnectionResultSchema,
@@ -256,6 +257,19 @@ export const orchestratorRoutes = {
       200: {
         description: "Aggregated user control metrics",
         schema: UserControlSummarySchema,
+      },
+    },
+  },
+  policies: {
+    method: "get",
+    path: "/policies",
+    summary: "List all authorization policy definitions",
+    operationId: "listPolicies",
+    tags: ["Policy Engine"],
+    responses: {
+      200: {
+        description: "Authorization policy definitions",
+        schema: PolicyViewListSchema,
       },
     },
   },
