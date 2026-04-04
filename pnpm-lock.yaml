@@ -169,6 +169,9 @@ importers:
       '@actbound/authorization':
         specifier: workspace:*
         version: link:../../packages/authorization
+      '@actbound/openfga':
+        specifier: workspace:*
+        version: link:../../packages/openfga
       '@actbound/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk

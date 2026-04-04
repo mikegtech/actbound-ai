@@ -2,10 +2,14 @@
   "name": "@actbound/openfga",
   "private": true,
   "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "deploy-model": "tsx src/scripts/deploy-model.ts",
     "seed-tuples": "tsx src/scripts/seed-tuples.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@openfga/sdk": "^0.8.0",

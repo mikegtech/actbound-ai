@@ -14,6 +14,8 @@
       "@actbound/authorization/*": ["packages/authorization/src/*"],
       "@actbound/sdk": ["packages/sdk/src/index.ts"],
       "@actbound/sdk/*": ["packages/sdk/src/*"],
+      "@actbound/openfga": ["packages/openfga/src/index.ts"],
+      "@actbound/openfga/*": ["packages/openfga/src/*"],
       "@actbound/ui": ["packages/ui/src/index.ts"],
       "@actbound/ui/*": ["packages/ui/src/*"]
     }

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { OrchestratorApiClient } from "@actbound/sdk";
+import { useAuth } from "../providers/auth";
 import { useConfig } from "../providers/config";
 
 /**
