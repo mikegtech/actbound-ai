@@ -20,8 +20,11 @@ function resolveField(
 
   for (const part of parts) {
     if (current === null || current === undefined) return undefined;
-    if (typeof current !== "object") return undefined;
-    current = (current as Record<string, unknown>)[part];
+    if (typeof current !== "object" || Array.isArray(current)) return undefined;
+    const obj = current as Record<string, unknown>;
+    // Guard against prototype pollution — only traverse own properties
+    if (!Object.hasOwn(obj, part)) return undefined;
+    current = obj[part];
   }
 
   return current;

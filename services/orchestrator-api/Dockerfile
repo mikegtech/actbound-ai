@@ -35,4 +35,5 @@ COPY --from=build /app/services/orchestrator-api/dist/ services/orchestrator-api
 RUN pnpm install --frozen-lockfile --prod
 
 EXPOSE 3001
+USER node
 CMD ["node", "services/orchestrator-api/dist/main.js"]
