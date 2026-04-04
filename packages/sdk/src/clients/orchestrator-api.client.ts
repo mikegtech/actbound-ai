@@ -1,4 +1,5 @@
 import {
+  ActivityTimelineSchema,
   AgentActionExecuteRequestSchema,
   AgentActionExecuteResultSchema,
   AgentActionPreviewRequestSchema,
@@ -20,6 +21,7 @@ import {
   TokenBrokerPreviewResultSchema,
   TokenBrokerStatusSchema,
   TokenCacheSummarySchema,
+  UserControlSummarySchema,
   VaultConnectionListSchema,
   VaultSessionListSchema,
 } from "../schemas";
@@ -101,6 +103,14 @@ export class OrchestratorApiClient extends ApiClientBase {
 
   getAuditEvents() {
     return this.get("/audit-events", AuditEventListSchema);
+  }
+
+  getMeActivity() {
+    return this.get("/me/activity", ActivityTimelineSchema);
+  }
+
+  getMeControlSummary() {
+    return this.get("/me/control-summary", UserControlSummarySchema);
   }
 
   getTokenBrokerStatus() {

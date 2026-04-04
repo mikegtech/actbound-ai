@@ -3,6 +3,7 @@ import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 
 import { AuthorizationContextMiddleware } from "./common/authorization-context.middleware";
 import { DelegatedAccessModule } from "./delegated-access/delegated-access.module";
+import { AuditEventStore } from "./domain/audit/audit-event.store";
 import { AgentActionsController } from "./modules/agent-actions.controller";
 import { AuditEventsController } from "./modules/audit-events.controller";
 import { DocsController } from "./modules/docs.controller";
@@ -19,7 +20,8 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
     HealthController,
     MeController,
   ],
-  providers: [PermissionGuard],
+  providers: [PermissionGuard, AuditEventStore],
+  exports: [AuditEventStore],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -452,13 +452,13 @@ Typed permission model, policy engine, backend-issued decisions, web UI consumpt
 
 Broker status/preview/retrieval, Redis with fallback, safe metadata only.
 
-### Phase 4 — Auth0 Token Vault Delegated Access (In Progress)
+### Phase 4 — Auth0 Token Vault Delegated Access (Complete)
 
-Delegated-access models, provider connections, consent preview, vault sessions, step-up markers, Token Vault TODO seams.
+Delegated-access models, provider connections, consent preview, vault sessions, step-up markers, Token Vault TODO seams. Auth0 dev/hackathon tenant provisioned (actbound-web, actbound-api, actbound-m2m, token enrichment actions).
 
-### Phase 5 — Auditability and User Control (Planned)
+### Phase 5 — Auditability and User Control (In Progress)
 
-User-visible permissions, action history, connected accounts, revocation UI.
+User-visible permissions, action history, connected accounts, revocation UI, audit trail, decision explanations.
 
 ### Phase 6 — Hackathon Submission Readiness (Planned)
 
@@ -530,7 +530,13 @@ These apply to every AI agent and tool operating in this repo.
 
 - Tenant: `dev-6az71xw7wqwtmp0q.us.auth0.com`
 - MCP access: configured in `.mcp.json` via `@auth0/auth0-mcp-server`
-- ActBound-specific applications and API to be created per `docs/architecture/identity-trust-model.md` section 8
+- **Auth0 dev/hackathon setup is documented and provisioned** — see `docs/auth0-setup.md`
+- `actbound-web` (SPA): client ID `VKm1ClfzHqI0VSKtjtzAtBDbgeBXAVLp`
+- `actbound-api` (resource server): audience `https://api.actbound.dev`, 14 scopes
+- `actbound-m2m` (M2M): client ID `ljGntsIp3TqZrXxvvdjNzH9MONSX68OQ`, granted all 14 scopes
+- Actions: `actbound-post-login-enrich` and `actbound-m2m-enrich` deployed (need manual flow binding)
+- Token broker pattern is the required M2M issuance path (see `docs/auth0-setup.md` section "Token Broker Pattern")
+- Remaining: bind actions to flows, create demo users
 
 ---
 

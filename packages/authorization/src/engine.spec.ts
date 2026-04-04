@@ -83,11 +83,14 @@ describe("DefaultAuthorizationPolicyEngine", () => {
     });
 
     it("denies when role does not grant permission", () => {
-      // audit_events:read requires admin or operator – viewer is not enough
+      // sensitive_actions:execute requires admin or operator – viewer is not enough
       const ctx = baseContext({
         actor: { id: "a", type: "user", roles: ["viewer"] },
       });
-      const decision = engine.evaluatePermission(ctx, "audit_events:read");
+      const decision = engine.evaluatePermission(
+        ctx,
+        "sensitive_actions:execute",
+      );
       expect(decision.allowed).toBe(false);
       expect(hasReason(decision, "role_grant_missing")).toBe(true);
     });

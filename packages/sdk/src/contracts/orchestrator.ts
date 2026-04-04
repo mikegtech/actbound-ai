@@ -1,5 +1,6 @@
 import type { ApiRouteContract } from "./types";
 import {
+  ActivityTimelineSchema,
   AgentActionExecuteRequestSchema,
   AgentActionExecuteResultSchema,
   AgentActionPreviewRequestSchema,
@@ -22,6 +23,7 @@ import {
   TokenBrokerPreviewResultSchema,
   TokenBrokerStatusSchema,
   TokenCacheSummarySchema,
+  UserControlSummarySchema,
   VaultConnectionListSchema,
   VaultSessionListSchema,
 } from "../schemas";
@@ -223,11 +225,37 @@ export const orchestratorRoutes = {
     path: "/audit-events",
     summary: "List audit trail events",
     operationId: "listAuditEvents",
-    tags: ["Audit Events"],
+    tags: ["Audit & User Control"],
     responses: {
       200: {
         description: "Audit event list",
         schema: AuditEventListSchema,
+      },
+    },
+  },
+  meActivity: {
+    method: "get",
+    path: "/me/activity",
+    summary: "User-scoped activity timeline",
+    operationId: "getCurrentActorActivity",
+    tags: ["Audit & User Control"],
+    responses: {
+      200: {
+        description: "Activity timeline for the current actor",
+        schema: ActivityTimelineSchema,
+      },
+    },
+  },
+  meControlSummary: {
+    method: "get",
+    path: "/me/control-summary",
+    summary: "User control dashboard summary",
+    operationId: "getCurrentActorControlSummary",
+    tags: ["Audit & User Control"],
+    responses: {
+      200: {
+        description: "Aggregated user control metrics",
+        schema: UserControlSummarySchema,
       },
     },
   },

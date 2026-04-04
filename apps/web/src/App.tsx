@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import type {
+  ActivityTimelineEntry,
   AgentActionExecuteResult,
   AgentActionPreviewResult,
   BrokeredTokenResponse,
@@ -12,6 +13,7 @@ import type {
   TokenBrokerPreviewResult,
   TokenBrokerStatus,
   TokenCacheSummary,
+  UserControlSummary,
   VaultSession,
 } from "@actbound/sdk";
 import { OrchestratorApiClient } from "@actbound/sdk";
@@ -44,6 +46,11 @@ export function App() {
     useState<TokenBrokerPreviewResult | null>(null);
   const [brokeredToken, setBrokeredToken] =
     useState<BrokeredTokenResponse | null>(null);
+  const [activityTimeline, setActivityTimeline] = useState<
+    ActivityTimelineEntry[]
+  >([]);
+  const [controlSummary, setControlSummary] =
+    useState<UserControlSummary | null>(null);
   const [delegatedFeedback, setDelegatedFeedback] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +67,8 @@ export function App() {
         vaultSessionResponse,
         brokerStatusResponse,
         brokerCacheResponse,
+        activityResponse,
+        controlSummaryResponse,
       ] = await Promise.all([
         orchestratorClient.getMePermissions(),
         orchestratorClient.getConnections(),
@@ -67,6 +76,8 @@ export function App() {
         orchestratorClient.getVaultSessions(),
         orchestratorClient.getTokenBrokerStatus(),
         orchestratorClient.getTokenBrokerCache(),
+        orchestratorClient.getMeActivity(),
+        orchestratorClient.getMeControlSummary(),
       ]);
 
       setPermissionContext(permissionResponse.context);
@@ -76,6 +87,8 @@ export function App() {
       setVaultSessions(vaultSessionResponse.sessions);
       setTokenBrokerStatus(brokerStatusResponse);
       setTokenCacheSummary(brokerCacheResponse);
+      setActivityTimeline(activityResponse.entries);
+      setControlSummary(controlSummaryResponse);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -802,6 +815,113 @@ export function App() {
               </p>
             </div>
           ) : null}
+        </Panel>
+      </section>
+
+      <section className="grid">
+        <Panel
+          eyebrow="User Control"
+          title="Your access dashboard"
+          footer={
+            <p className="feedback">
+              All metrics are computed by the backend. The UI only renders what
+              it receives.
+            </p>
+          }
+        >
+          {controlSummary ? (
+            <div className="context-grid">
+              <div className="context-card">
+                <strong>Permissions</strong>
+                <p>
+                  {controlSummary.permissionsSummary.allowed} /{" "}
+                  {controlSummary.permissionsSummary.total} allowed
+                </p>
+                <StatusPill
+                  tone={
+                    controlSummary.permissionsSummary.denied === 0
+                      ? "success"
+                      : "warning"
+                  }
+                >
+                  {controlSummary.permissionsSummary.denied} denied
+                </StatusPill>
+              </div>
+              <div className="context-card">
+                <strong>Connected Accounts</strong>
+                <p>{controlSummary.connectedAccounts} active</p>
+              </div>
+              <div className="context-card">
+                <strong>Active Grants</strong>
+                <p>{controlSummary.activeGrants} grants</p>
+              </div>
+              <div className="context-card">
+                <strong>Activity</strong>
+                <p>{controlSummary.recentActivity} events</p>
+                <p>{controlSummary.revocations} revocations</p>
+              </div>
+            </div>
+          ) : (
+            <p className="empty-state">Loading control summary...</p>
+          )}
+        </Panel>
+
+        <Panel
+          eyebrow="Activity Timeline"
+          title="Recent actions and decisions"
+          footer={
+            <p className="feedback">
+              Shows actions by you and agents acting on your behalf, with
+              authorization decisions and step-up indicators.
+            </p>
+          }
+        >
+          {activityTimeline.length > 0 ? (
+            <div className="audit-timeline">
+              {activityTimeline.map((entry) => (
+                <div key={entry.id} className="audit-entry">
+                  <div className="audit-entry__header">
+                    <StatusPill
+                      tone={
+                        entry.allowed === false
+                          ? "warning"
+                          : entry.stepUpRequired
+                            ? "warning"
+                            : "success"
+                      }
+                    >
+                      {entry.allowed === false
+                        ? "denied"
+                        : entry.stepUpRequired
+                          ? "step-up"
+                          : "allowed"}
+                    </StatusPill>
+                    <span className="audit-entry__type">{entry.eventType}</span>
+                    <span className="audit-entry__time">
+                      {new Date(entry.occurredAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <p className="audit-entry__summary">{entry.summary}</p>
+                  {entry.resource ? (
+                    <p className="audit-entry__resource">
+                      {entry.resource.type}
+                      {entry.resource.label ? `: ${entry.resource.label}` : ""}
+                    </p>
+                  ) : null}
+                  {entry.onBehalfOf ? (
+                    <p className="audit-entry__delegation">
+                      On behalf of: {entry.onBehalfOf}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-state">
+              No activity recorded yet. Interact with the dashboard to generate
+              events.
+            </p>
+          )}
         </Panel>
       </section>
     </main>

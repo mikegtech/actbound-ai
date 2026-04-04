@@ -162,7 +162,7 @@ export const permissionPolicies: Record<Permission, PermissionPolicy> = {
     permission: "audit_events:read",
     resource: "audit_event",
     action: "read",
-    roles: ["admin", "operator"],
+    roles: ["admin", "operator", "viewer"],
     actorTypes: ["user", "system"],
   },
   "brokered_tokens:read": {

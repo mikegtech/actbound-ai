@@ -2,9 +2,12 @@ import { evaluateAuditViewing } from "@actbound/authorization";
 import { Controller, ForbiddenException, Get, Req } from "@nestjs/common";
 
 import type { RequestWithAuthContext } from "../common/request-context";
+import { AuditEventStore } from "../domain/audit/audit-event.store";
 
 @Controller("audit-events")
 export class AuditEventsController {
+  constructor(private readonly auditStore: AuditEventStore) {}
+
   @Get()
   getAuditEvents(@Req() request: RequestWithAuthContext) {
     const authContext = request.authContext;
@@ -32,21 +35,28 @@ export class AuditEventsController {
       });
     }
 
+    // Seed demo events on first access
+    this.auditStore.seedDemoEvents(authContext.actor.id);
+
+    // Emit an audit event for this access
+    this.auditStore.emit({
+      eventType: "audit.access.success",
+      action: "read",
+      actor: {
+        id: authContext.actor.id,
+        principalType: authContext.actor.type,
+      },
+      resource: { type: "audit_event" },
+      decision: {
+        allowed: true,
+        reasons: [{ code: "policy_allow" }],
+      },
+      status: "success",
+      source: "orchestrator",
+    });
+
     return {
-      events: [
-        {
-          id: "audit_demo_001",
-          actorId: authContext.actor.id,
-          action: "agent_actions.execute",
-          resourceId: authContext.tokenVaultConnection.connectionId,
-          status: "queued" as const,
-          occurredAt: new Date().toISOString(),
-          metadata: {
-            source: "orchestrator-api",
-            decisionCodes: decision.reasons.map((reason) => reason.code),
-          },
-        },
-      ],
+      events: this.auditStore.listAll(),
     };
   }
 }
