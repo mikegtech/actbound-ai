@@ -42,6 +42,23 @@ export class ApiClientBase {
     });
   }
 
+  protected async del<TSchema extends ZodTypeAny>(
+    path: string,
+    responseSchema: TSchema,
+  ): Promise<Infer<TSchema>> {
+    return this.request("DELETE", path, responseSchema);
+  }
+
+  protected async postJson<TSchema extends ZodTypeAny>(
+    path: string,
+    body: Record<string, unknown>,
+    responseSchema: TSchema,
+  ): Promise<Infer<TSchema>> {
+    return this.request("POST", path, responseSchema, {
+      body: JSON.stringify(body),
+    });
+  }
+
   private async request<TSchema extends ZodTypeAny>(
     method: string,
     path: string,

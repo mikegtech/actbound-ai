@@ -52,27 +52,29 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
       // Provide the OpenFGA RelationshipWriter from env config.
       // If OPENFGA_STORE_ID is not set, the writer is not available
       // and relationship endpoints will fail clearly.
-      provide: RelationshipWriter,
+      provide: "RELATIONSHIP_WRITER",
       useFactory: () => {
         const apiUrl = process.env.OPENFGA_API_URL ?? "http://localhost:8180";
         const storeId = process.env.OPENFGA_STORE_ID ?? "";
         const modelId = process.env.OPENFGA_MODEL_ID;
 
         if (!storeId) {
-          // Return a stub writer that fails clearly when called.
+          // Return a stub writer with no-op methods.
           // This keeps the app bootable without OpenFGA for local dev.
-          return new Proxy({} as RelationshipWriter, {
-            get: (_target, prop) => {
-              if (typeof prop === "string") {
-                return () => {
-                  throw new Error(
-                    `OpenFGA not configured. Set OPENFGA_STORE_ID. Called: ${prop}`,
-                  );
-                };
-              }
-              return undefined;
-            },
-          });
+          const notConfigured = (method: string) => () =>
+            Promise.resolve({
+              tuple: { user: "", relation: "", object: "" },
+              action: "write" as const,
+              result: "error" as const,
+              error: `OpenFGA not configured (${method}). Set OPENFGA_STORE_ID.`,
+            });
+          return {
+            write: notConfigured("write"),
+            delete: notConfigured("delete"),
+            check: () => Promise.resolve(false),
+            readTuples: () => Promise.resolve([]),
+            listRelatedSubjects: () => Promise.resolve([]),
+          } as unknown as RelationshipWriter;
         }
 
         const client = createFgaClient({

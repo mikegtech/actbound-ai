@@ -8,6 +8,7 @@ WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY packages/config/package.json packages/config/package.json
 COPY packages/authorization/package.json packages/authorization/package.json
+COPY packages/openfga/package.json packages/openfga/package.json
 COPY packages/sdk/package.json packages/sdk/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY services/orchestrator-api/package.json services/orchestrator-api/package.json
@@ -17,6 +18,7 @@ COPY tsconfig.base.json tsconfig.json ./
 COPY packages/ packages/
 COPY services/orchestrator-api/ services/orchestrator-api/
 RUN pnpm --filter @actbound/authorization build \
+ && pnpm --filter @actbound/openfga build \
  && pnpm --filter @actbound/sdk build \
  && pnpm --filter @actbound/orchestrator-api build
 
@@ -27,6 +29,8 @@ COPY --from=build /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json
 COPY --from=build /app/packages/config/package.json packages/config/package.json
 COPY --from=build /app/packages/authorization/package.json packages/authorization/package.json
 COPY --from=build /app/packages/authorization/dist/ packages/authorization/dist/
+COPY --from=build /app/packages/openfga/package.json packages/openfga/package.json
+COPY --from=build /app/packages/openfga/dist/ packages/openfga/dist/
 COPY --from=build /app/packages/sdk/package.json packages/sdk/package.json
 COPY --from=build /app/packages/sdk/dist/ packages/sdk/dist/
 COPY --from=build /app/packages/ui/package.json packages/ui/package.json

@@ -8,7 +8,12 @@
  * NAMING: "assistant" in API → "agent" in OpenFGA tuples.
  */
 
-import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import type { RelationshipWriter } from "@actbound/openfga";
 import {
   type AccessEntry,
@@ -37,7 +42,9 @@ interface RevokeAccessInput {
 export class ResourceAccessService {
   private readonly logger = new Logger(ResourceAccessService.name);
 
-  constructor(private readonly writer: RelationshipWriter) {}
+  constructor(
+    @Inject("RELATIONSHIP_WRITER") private readonly writer: RelationshipWriter,
+  ) {}
 
   // ── Grant ───────────────────────────────────────────────
 

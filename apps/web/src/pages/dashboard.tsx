@@ -11,11 +11,14 @@ import { StatusPill } from "@actbound/ui";
 import { useAuth } from "../providers/auth";
 import { useConfig } from "../providers/config";
 
+import { AccessManagementPage } from "./access-management";
+
 type NavSection =
   | "dashboard"
   | "permissions"
   | "connections"
   | "activity"
+  | "access"
   | "broker";
 
 export function DashboardPage() {
@@ -104,6 +107,12 @@ export function DashboardPage() {
             ☰ Activity Logs
           </button>
           <button
+            className={`dash-nav-item ${section === "access" ? "dash-nav-item--active" : ""}`}
+            onClick={() => setSection("access")}
+          >
+            🔐 Access Management
+          </button>
+          <button
             className={`dash-nav-item ${section === "permissions" ? "dash-nav-item--active" : ""}`}
             onClick={() => setSection("permissions")}
           >
@@ -153,6 +162,7 @@ export function DashboardPage() {
                 lastDenied={lastDenied}
               />
             )}
+            {section === "access" && <AccessManagementPage />}
             {section === "permissions" && (
               <PolicyEngineView policies={policies} decisions={decisions} />
             )}

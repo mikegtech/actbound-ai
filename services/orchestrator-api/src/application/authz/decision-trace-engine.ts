@@ -7,7 +7,7 @@
  * This is the "why" engine — every allow/deny is fully explained.
  */
 
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import type { RelationshipWriter } from "@actbound/openfga";
 import { toFgaSubjectType } from "../../domain/relationships/types";
@@ -27,7 +27,7 @@ export class DecisionTraceEngine {
   private readonly logger = new Logger(DecisionTraceEngine.name);
 
   constructor(
-    private readonly writer: RelationshipWriter,
+    @Inject("RELATIONSHIP_WRITER") private readonly writer: RelationshipWriter,
     private readonly policyEngine: PolicyEngine,
   ) {}
 

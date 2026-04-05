@@ -19,11 +19,9 @@ import {
   Query,
 } from "@nestjs/common";
 import { DecisionTraceEngine } from "../application/authz/decision-trace-engine";
+import { buildExplainResult } from "../application/authz/graph-builder";
 import { ResourceAccessService } from "../application/resource-access/resource-access.service";
-import type {
-  ResourceAccessView,
-  SubjectType,
-} from "../domain/relationships/types";
+import type { ResourceAccessView } from "../domain/relationships/types";
 
 interface GrantUserAccessBody {
   id: string;
@@ -148,23 +146,37 @@ export class ResourceAccessController {
     @Param("resourceId") resourceId: string,
     @Param("entityType") entityType: string,
     @Param("entityId") entityId: string,
-    @Query("trace") trace?: string,
+    @Query("action") action?: string,
   ) {
-    // If ?trace=true, return full decision trace instead of simple explanation
-    if (trace === "true") {
-      return this.traceEngine.evaluate({
-        subjectType: entityType as "user" | "assistant",
-        subjectId: entityId,
-        resourceType: "resource",
-        resourceId,
-        action: "viewer", // Default check — the trace shows all layers
-      });
-    }
-
-    return this.accessService.explainAccess(
+    const trace = await this.traceEngine.evaluate({
+      subjectType: entityType as "user" | "assistant",
+      subjectId: entityId,
+      resourceType: "resource",
       resourceId,
-      entityType as SubjectType,
-      entityId,
-    );
+      action: action ?? "viewer",
+    });
+
+    return buildExplainResult(trace);
+  }
+
+  // ── Access Graph ────────────────────────────────────────
+
+  @Get(":resourceId/access/:entityType/:entityId/graph")
+  async getAccessGraph(
+    @Param("resourceId") resourceId: string,
+    @Param("entityType") entityType: string,
+    @Param("entityId") entityId: string,
+    @Query("action") action?: string,
+  ) {
+    const trace = await this.traceEngine.evaluate({
+      subjectType: entityType as "user" | "assistant",
+      subjectId: entityId,
+      resourceType: "resource",
+      resourceId,
+      action: action ?? "viewer",
+    });
+
+    const result = buildExplainResult(trace);
+    return result.graph;
   }
 }

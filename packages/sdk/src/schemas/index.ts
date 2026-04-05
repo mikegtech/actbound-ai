@@ -7,6 +7,7 @@ export * from "./delegated-access";
 export * from "./listing";
 export * from "./permission-decision";
 export * from "./policy-view";
+export * from "./relationship";
 export * from "./responses";
 export * from "./scoped-token-request";
 export * from "./standard-api-error";

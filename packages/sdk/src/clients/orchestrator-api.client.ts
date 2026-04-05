@@ -1,4 +1,5 @@
 import {
+  AccessGrantResultSchema,
   ActivityTimelineSchema,
   AgentActionExecuteRequestSchema,
   AgentActionExecuteResultSchema,
@@ -13,8 +14,11 @@ import {
   ConsentPreviewResultSchema,
   ConsentSummaryListSchema,
   HealthStatusSchema,
+  ExplainResultSchema,
   PermissionDecisionListSchema,
   PolicyViewListSchema,
+  RelationshipResultSchema,
+  ResourceAccessViewSchema,
   ProviderConnectionListSchema,
   RevocationIntentSchema,
   RevokeConnectionResultSchema,
@@ -142,5 +146,133 @@ export class OrchestratorApiClient extends ApiClientBase {
 
   getTokenBrokerCache() {
     return this.get("/token-broker/cache", TokenCacheSummarySchema);
+  }
+
+  // ── Organization Membership ────────────────────────────
+
+  addOrgMember(orgId: string, userId: string) {
+    return this.postJson(
+      `/organizations/${orgId}/members`,
+      { userId },
+      RelationshipResultSchema,
+    );
+  }
+
+  removeOrgMember(orgId: string, userId: string) {
+    return this.del(
+      `/organizations/${orgId}/members/${userId}`,
+      RelationshipResultSchema,
+    );
+  }
+
+  addOrgAdmin(orgId: string, userId: string) {
+    return this.postJson(
+      `/organizations/${orgId}/admins`,
+      { userId },
+      RelationshipResultSchema,
+    );
+  }
+
+  removeOrgAdmin(orgId: string, userId: string) {
+    return this.del(
+      `/organizations/${orgId}/admins/${userId}`,
+      RelationshipResultSchema,
+    );
+  }
+
+  assignAssistantToOrg(assistantId: string, orgId: string) {
+    return this.postJson(
+      `/assistants/${assistantId}/organizations`,
+      { orgId },
+      RelationshipResultSchema,
+    );
+  }
+
+  removeAssistantFromOrg(assistantId: string, orgId: string) {
+    return this.del(
+      `/assistants/${assistantId}/organizations/${orgId}`,
+      RelationshipResultSchema,
+    );
+  }
+
+  // ── Resource Access ────────────────────────────────────
+
+  getResourceAccess(resourceId: string) {
+    return this.get(
+      `/resources/${resourceId}/access`,
+      ResourceAccessViewSchema,
+    );
+  }
+
+  grantUserResourceAccess(
+    resourceId: string,
+    userId: string,
+    accessLevel: string,
+  ) {
+    return this.postJson(
+      `/resources/${resourceId}/access/users`,
+      { id: userId, accessLevel },
+      AccessGrantResultSchema,
+    );
+  }
+
+  grantAssistantResourceAccess(
+    resourceId: string,
+    assistantId: string,
+    accessLevel: string,
+  ) {
+    return this.postJson(
+      `/resources/${resourceId}/access/assistants`,
+      { id: assistantId, accessLevel },
+      AccessGrantResultSchema,
+    );
+  }
+
+  grantOrgResourceAccess(
+    resourceId: string,
+    orgId: string,
+    accessLevel: string,
+  ) {
+    return this.postJson(
+      `/resources/${resourceId}/access/organizations`,
+      { id: orgId, accessLevel },
+      AccessGrantResultSchema,
+    );
+  }
+
+  revokeUserResourceAccess(resourceId: string, userId: string) {
+    return this.del(
+      `/resources/${resourceId}/access/users/${userId}`,
+      AccessGrantResultSchema,
+    );
+  }
+
+  revokeAssistantResourceAccess(resourceId: string, assistantId: string) {
+    return this.del(
+      `/resources/${resourceId}/access/assistants/${assistantId}`,
+      AccessGrantResultSchema,
+    );
+  }
+
+  revokeOrgResourceAccess(resourceId: string, orgId: string) {
+    return this.del(
+      `/resources/${resourceId}/access/organizations/${orgId}`,
+      AccessGrantResultSchema,
+    );
+  }
+
+  // ── Explainability ─────────────────────────────────────
+
+  explainAccess(
+    resourceId: string,
+    entityType: string,
+    entityId: string,
+    action?: string,
+  ) {
+    const params = action ? `?action=${action}` : "";
+    return this.get(
+      `/resources/${resourceId}/access/${entityType}/${entityId}/why${params}`,
+      ExplainResultSchema,
+    );
   }
 }

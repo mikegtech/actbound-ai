@@ -8,7 +8,12 @@
  * Naming: "assistant" in the API surface maps to "agent" in OpenFGA tuples.
  */
 
-import { Injectable, Logger, BadRequestException } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  Logger,
+  BadRequestException,
+} from "@nestjs/common";
 import {
   type RelationshipRequest,
   type RelationshipResult,
@@ -21,7 +26,9 @@ import type { RelationshipWriter, RelationshipTuple } from "@actbound/openfga";
 export class RelationshipManagementService {
   private readonly logger = new Logger(RelationshipManagementService.name);
 
-  constructor(private readonly writer: RelationshipWriter) {}
+  constructor(
+    @Inject("RELATIONSHIP_WRITER") private readonly writer: RelationshipWriter,
+  ) {}
 
   async grant(request: RelationshipRequest): Promise<RelationshipResult> {
     this.validateRequest(request);
