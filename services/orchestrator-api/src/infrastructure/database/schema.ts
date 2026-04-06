@@ -3,19 +3,27 @@
  *
  * Per ADR-005: Drizzle belongs only in the infrastructure layer.
  * Domain and application layers must never import this file.
+ *
+ * Database layout:
+ * - actbound database, audit schema: audit_events (append-only audit trail)
+ * - actbound database, public schema: future app tables (orgs, users, resources)
+ * - openfga database: OpenFGA tuples and models (separate database)
  */
 
 import {
   boolean,
   index,
   jsonb,
-  pgTable,
+  pgSchema,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const auditEvents = pgTable(
+// Dedicated audit schema — append-oriented, immutable event storage
+const auditSchema = pgSchema("audit");
+
+export const auditEvents = auditSchema.table(
   "audit_events",
   {
     id: uuid("id").primaryKey().defaultRandom(),

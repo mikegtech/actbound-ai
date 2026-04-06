@@ -8,6 +8,8 @@ import { DurableAuditService } from "./application/audit/durable-audit.service";
 import { DecisionTraceEngine } from "./application/authz/decision-trace-engine";
 import { PolicyEngine } from "./application/authz/policies/policy-engine";
 import { RelationshipManagementService } from "./application/relationships/relationship-management.service";
+import { DelegatedActionService } from "./application/delegated-action/delegated-action.service";
+import { NestAuditWriter } from "./application/audit/nest-audit-writer";
 import { ResourceAccessService } from "./application/resource-access/resource-access.service";
 import { DelegatedAccessModule } from "./delegated-access/delegated-access.module";
 import { AuditEventStore } from "./domain/audit/audit-event.store";
@@ -25,6 +27,7 @@ import {
   OrganizationMembershipController,
   ResourceAccessController as RelationshipsResourceController,
 } from "./modules/relationships.controller";
+import { DelegatedActionController } from "./modules/delegated-action.controller";
 import { ResourceAccessController } from "./modules/resource-access.controller";
 import { TokenBrokerModule } from "./token-broker/token-broker.module";
 
@@ -35,6 +38,7 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
     AssistantRelationshipController,
     AuditEventsController,
     AuthzController,
+    DelegatedActionController,
     DocsController,
     HealthController,
     MeController,
@@ -48,6 +52,9 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
     PermissionGuard,
     AuditEventStore,
     DurableAuditService,
+    DelegatedActionService,
+    NestAuditWriter,
+    { provide: "AUDIT_WRITER", useExisting: NestAuditWriter },
     DecisionTraceEngine,
     PolicyEngine,
     RelationshipManagementService,

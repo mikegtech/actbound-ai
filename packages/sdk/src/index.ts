@@ -1,3 +1,4 @@
+export * from "./audit";
 export * from "./clients";
 export * from "./contracts/agent";
 export * from "./contracts/orchestrator";
