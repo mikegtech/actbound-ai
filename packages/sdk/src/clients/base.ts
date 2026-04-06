@@ -59,6 +59,16 @@ export class ApiClientBase {
     });
   }
 
+  protected async putJson<TSchema extends ZodTypeAny>(
+    path: string,
+    body: Record<string, unknown>,
+    responseSchema: TSchema,
+  ): Promise<Infer<TSchema>> {
+    return this.request("PUT", path, responseSchema, {
+      body: JSON.stringify(body),
+    });
+  }
+
   private async request<TSchema extends ZodTypeAny>(
     method: string,
     path: string,

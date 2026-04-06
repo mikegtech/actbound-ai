@@ -1,3 +1,4 @@
+export * from "./abac-policy";
 export * from "./agent-action-execute";
 export * from "./agent-action-preview";
 export * from "./audit-event";

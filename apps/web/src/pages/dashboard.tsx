@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type {
   ActivityTimelineEntry,
-  PermissionDecisionRecord,
-  PolicyView,
   ProviderConnection,
   UserControlSummary,
 } from "@actbound/sdk";
@@ -12,6 +10,7 @@ import { useAuth } from "../providers/auth";
 import { useConfig } from "../providers/config";
 
 import { AccessManagementPage } from "./access-management";
+import { PolicyAdminPage } from "./policy-admin";
 
 type NavSection =
   | "dashboard"
@@ -25,8 +24,6 @@ export function DashboardPage() {
   const { user, logout, mode } = useAuth();
   const config = useConfig();
   const [section, setSection] = useState<NavSection>("dashboard");
-  const [decisions, setDecisions] = useState<PermissionDecisionRecord[]>([]);
-  const [policies, setPolicies] = useState<PolicyView[]>([]);
   const [connections, setConnections] = useState<ProviderConnection[]>([]);
   const [activity, setActivity] = useState<ActivityTimelineEntry[]>([]);
   const [controlSummary, setControlSummary] =
@@ -44,16 +41,11 @@ export function DashboardPage() {
     async function load() {
       setIsLoading(true);
       try {
-        const [permRes, connRes, actRes, ctrlRes, policyRes] =
-          await Promise.all([
-            client.getMePermissions(),
-            client.getConnections(),
-            client.getMeActivity(),
-            client.getMeControlSummary(),
-            client.getPolicies(),
-          ]);
-        setDecisions(permRes.decisions);
-        setPolicies(policyRes.policies);
+        const [connRes, actRes, ctrlRes] = await Promise.all([
+          client.getConnections(),
+          client.getMeActivity(),
+          client.getMeControlSummary(),
+        ]);
         setConnections(connRes.connections);
         setActivity(actRes.entries);
         setControlSummary(ctrlRes);
@@ -163,9 +155,7 @@ export function DashboardPage() {
               />
             )}
             {section === "access" && <AccessManagementPage />}
-            {section === "permissions" && (
-              <PolicyEngineView policies={policies} decisions={decisions} />
-            )}
+            {section === "permissions" && <PolicyAdminPage />}
             {section === "connections" && (
               <ConnectionsView connections={connections} />
             )}
@@ -287,121 +277,6 @@ function DashboardView({
             </div>
           )}
         </section>
-      </div>
-    </>
-  );
-}
-
-function PolicyEngineView({
-  policies,
-  decisions,
-}: {
-  policies: PolicyView[];
-  decisions: PermissionDecisionRecord[];
-}) {
-  const [filter, setFilter] = useState("");
-
-  const filtered = policies.filter(
-    (p) =>
-      !filter ||
-      p.permission.toLowerCase().includes(filter.toLowerCase()) ||
-      p.resource.toLowerCase().includes(filter.toLowerCase()),
-  );
-
-  return (
-    <>
-      <div className="dash-panel__header" style={{ marginBottom: "1rem" }}>
-        <h2 style={{ fontSize: "1.6rem", margin: 0 }}>Policy Engine</h2>
-        <span className="dash-panel__subtitle">
-          Orchestrate and enforce zero-trust autonomous agent boundaries.
-        </span>
-      </div>
-
-      <div style={{ marginBottom: "1.25rem" }}>
-        <input
-          type="text"
-          placeholder="Search policies..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="login-field__input"
-          style={{
-            width: "100%",
-            maxWidth: 400,
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            padding: "0.6rem 0.85rem",
-            background: "var(--card)",
-          }}
-        />
-      </div>
-
-      <div className="policy-list">
-        {filtered.map((policy) => {
-          const decision = decisions.find(
-            (d) => d.permission === policy.permission,
-          );
-
-          return (
-            <div key={policy.permission} className="policy-card">
-              <div className="policy-card__header">
-                <div>
-                  <strong className="policy-card__name">
-                    {policy.permission.replace(":", " → ")}
-                  </strong>
-                  <p className="policy-card__desc">{policy.description}</p>
-                </div>
-                <div className="policy-card__badges">
-                  <StatusPill tone="success">Active</StatusPill>
-                  {decision && (
-                    <StatusPill tone={decision.allowed ? "success" : "warning"}>
-                      {decision.allowed
-                        ? "Currently Allowed"
-                        : "Currently Denied"}
-                    </StatusPill>
-                  )}
-                </div>
-              </div>
-
-              <div className="policy-card__meta">
-                <div>
-                  <span className="policy-card__label">Target</span>
-                  <span>{policy.target}</span>
-                </div>
-                <div>
-                  <span className="policy-card__label">Roles</span>
-                  <span>{policy.roles.join(", ")}</span>
-                </div>
-              </div>
-
-              <div className="policy-card__rule">
-                <span className="policy-card__label">Rule Logic</span>
-                <div className="rule-logic">
-                  {policy.conditions.map((c, i) => (
-                    <span key={i} className="rule-pill">
-                      {i > 0 && <span className="rule-pill__op">AND</span>}
-                      <span className="rule-pill__field">{c.field}</span>
-                      <span className="rule-pill__operator">{c.operator}</span>
-                      <span className="rule-pill__value">{c.value}</span>
-                    </span>
-                  ))}
-                  <span className="rule-pill rule-pill--action">
-                    THEN ALLOW
-                  </span>
-                </div>
-              </div>
-
-              {policy.flags.length > 0 && (
-                <div className="policy-card__flags">
-                  {policy.flags.map((flag) => (
-                    <span key={flag} className="policy-flag">
-                      {flag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
     </>
   );

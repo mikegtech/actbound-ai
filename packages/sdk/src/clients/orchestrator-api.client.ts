@@ -1,5 +1,8 @@
 import {
+  AbacPolicyListSchema,
+  AbacPolicySchema,
   AccessGrantResultSchema,
+  DeleteResultSchema,
   ActivityTimelineSchema,
   AgentActionExecuteRequestSchema,
   AgentActionExecuteResultSchema,
@@ -13,6 +16,7 @@ import {
   ConsentPreviewRequestSchema,
   ConsentPreviewResultSchema,
   ConsentSummaryListSchema,
+  DecisionTraceResultSchema,
   HealthStatusSchema,
   ExplainResultSchema,
   PermissionDecisionListSchema,
@@ -274,5 +278,33 @@ export class OrchestratorApiClient extends ApiClientBase {
       `/resources/${resourceId}/access/${entityType}/${entityId}/why${params}`,
       ExplainResultSchema,
     );
+  }
+
+  // ── ABAC Policy Engine ─────────────────────────────────
+
+  listAbacPolicies() {
+    return this.get("/policies/engine", AbacPolicyListSchema);
+  }
+
+  getAbacPolicy(id: string) {
+    return this.get(`/policies/engine/${id}`, AbacPolicySchema);
+  }
+
+  createAbacPolicy(policy: Record<string, unknown>) {
+    return this.postJson("/policies/engine", policy, AbacPolicySchema);
+  }
+
+  updateAbacPolicy(id: string, updates: Record<string, unknown>) {
+    return this.putJson(`/policies/engine/${id}`, updates, AbacPolicySchema);
+  }
+
+  deleteAbacPolicy(id: string) {
+    return this.del(`/policies/engine/${id}`, DeleteResultSchema);
+  }
+
+  // ── Authorization Evaluation ───────────────────────────
+
+  evaluateAuthorization(body: Record<string, unknown>) {
+    return this.postJson("/authz/evaluate", body, DecisionTraceResultSchema);
   }
 }

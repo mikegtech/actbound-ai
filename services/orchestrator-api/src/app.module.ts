@@ -3,12 +3,15 @@ import { createFgaClient, RelationshipWriter } from "@actbound/openfga";
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 
 import { AuthorizationContextMiddleware } from "./common/authorization-context.middleware";
+import { JwtAuthMiddleware } from "./common/jwt-auth.middleware";
+import { DurableAuditService } from "./application/audit/durable-audit.service";
 import { DecisionTraceEngine } from "./application/authz/decision-trace-engine";
 import { PolicyEngine } from "./application/authz/policies/policy-engine";
 import { RelationshipManagementService } from "./application/relationships/relationship-management.service";
 import { ResourceAccessService } from "./application/resource-access/resource-access.service";
 import { DelegatedAccessModule } from "./delegated-access/delegated-access.module";
 import { AuditEventStore } from "./domain/audit/audit-event.store";
+import { PostgresAuditEventRepository } from "./infrastructure/database/audit-event.repository.impl";
 import { AgentActionsController } from "./modules/agent-actions.controller";
 import { AuthzController } from "./modules/authz.controller";
 import { AuditEventsController } from "./modules/audit-events.controller";
@@ -44,14 +47,18 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
   providers: [
     PermissionGuard,
     AuditEventStore,
+    DurableAuditService,
     DecisionTraceEngine,
     PolicyEngine,
     RelationshipManagementService,
     ResourceAccessService,
+    // Audit repository — Postgres when DATABASE_URL is set
     {
-      // Provide the OpenFGA RelationshipWriter from env config.
-      // If OPENFGA_STORE_ID is not set, the writer is not available
-      // and relationship endpoints will fail clearly.
+      provide: "AUDIT_REPOSITORY",
+      useClass: PostgresAuditEventRepository,
+    },
+    // OpenFGA RelationshipWriter
+    {
       provide: "RELATIONSHIP_WRITER",
       useFactory: () => {
         const apiUrl = process.env.OPENFGA_API_URL ?? "http://localhost:8180";
@@ -59,8 +66,6 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
         const modelId = process.env.OPENFGA_MODEL_ID;
 
         if (!storeId) {
-          // Return a stub writer with no-op methods.
-          // This keeps the app bootable without OpenFGA for local dev.
           const notConfigured = (method: string) => () =>
             Promise.resolve({
               tuple: { user: "", relation: "", object: "" },
@@ -86,10 +91,13 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
       },
     },
   ],
-  exports: [AuditEventStore],
+  exports: [AuditEventStore, DurableAuditService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthorizationContextMiddleware).forRoutes("*");
+    // JWT auth runs first, extracts principal. AuthZ context runs second, uses principal.
+    consumer
+      .apply(JwtAuthMiddleware, AuthorizationContextMiddleware)
+      .forRoutes("*");
   }
 }

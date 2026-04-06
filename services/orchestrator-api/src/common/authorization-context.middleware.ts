@@ -145,7 +145,29 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
     _response: Response,
     next: NextFunction,
   ) {
-    const subjectId = request.header("x-subject-id") ?? "subject-demo";
+    // Use real principal from JWT when available (set by JwtAuthMiddleware)
+    const principal = request.principal;
+    const isRealPrincipal = principal?.authenticated === true;
+
+    // Actor identity: prefer JWT principal over demo headers
+    const actorId = isRealPrincipal
+      ? principal!.sub
+      : (request.header("x-user-id") ?? "demo-user");
+    const actorType = isRealPrincipal
+      ? parseActorType(
+          principal!.principalType === "service"
+            ? "system"
+            : principal!.principalType,
+          undefined,
+        )
+      : parseActorType("user", request.header("x-actor-type"));
+    const actorRoles = isRealPrincipal
+      ? parseRoles(["viewer"], principal!.roles.join(","))
+      : parseRoles(["operator"], request.header("x-user-roles"));
+
+    const subjectId = isRealPrincipal
+      ? principal!.sub
+      : (request.header("x-subject-id") ?? "subject-demo");
     const consentStatus = parseConsentStatus(
       "granted",
       request.header("x-consent-status"),
@@ -190,11 +212,15 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
       request.header("x-vault-session-scopes"),
     );
 
+    const tenantId = isRealPrincipal
+      ? principal!.tenantId
+      : (request.header("x-tenant-id") ?? "demo-tenant");
+
     request.authContext = createAuthorizationContext({
       actor: {
-        id: request.header("x-user-id") ?? "demo-user",
-        type: parseActorType("user", request.header("x-actor-type")),
-        roles: parseRoles(["operator"], request.header("x-user-roles")),
+        id: actorId,
+        type: actorType,
+        roles: actorRoles,
       },
       subject: {
         id: subjectId,
@@ -236,7 +262,7 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
         ownerSubjectId: subjectId,
       },
       attributes: {
-        tenantId: request.header("x-tenant-id") ?? "demo-tenant",
+        tenantId,
         requestId: request.header("x-request-id") ?? undefined,
         tokenAudience: request.header("x-token-audience") ?? "agent-service",
         internalServiceCall: false,

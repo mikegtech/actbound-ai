@@ -31,7 +31,12 @@ describe("RelationshipManagementService", () => {
 
   beforeEach(() => {
     writer = mockWriter();
-    service = new RelationshipManagementService(writer);
+    const mockAudit = {
+      record: vi.fn(async () => ({})),
+    } as unknown as InstanceType<
+      typeof import("../audit/durable-audit.service").DurableAuditService
+    >;
+    service = new RelationshipManagementService(writer, mockAudit);
   });
 
   // ── Grant ───────────────────────────────────────────────

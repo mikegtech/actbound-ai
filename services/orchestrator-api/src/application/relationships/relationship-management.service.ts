@@ -21,6 +21,7 @@ import {
   isValidRelation,
 } from "../../domain/relationships/types";
 import type { RelationshipWriter, RelationshipTuple } from "@actbound/openfga";
+import { DurableAuditService } from "../audit/durable-audit.service";
 
 @Injectable()
 export class RelationshipManagementService {
@@ -28,6 +29,7 @@ export class RelationshipManagementService {
 
   constructor(
     @Inject("RELATIONSHIP_WRITER") private readonly writer: RelationshipWriter,
+    private readonly auditService: DurableAuditService,
   ) {}
 
   async grant(request: RelationshipRequest): Promise<RelationshipResult> {
@@ -73,6 +75,20 @@ export class RelationshipManagementService {
         result: outcome.detail,
       }),
     );
+
+    // Record durable audit event
+    void this.auditService.record({
+      eventType: `access.grant.${outcome.success ? "success" : "failed"}`,
+      actor: { sub: "system", principalType: "service" },
+      resource: { type: request.objectType, id: request.objectId },
+      action: `grant:${request.relation}`,
+      decision: { allowed: outcome.success },
+      metadata: {
+        subjectType: request.subjectType,
+        subjectId: request.subjectId,
+        relation: request.relation,
+      },
+    });
 
     return outcome;
   }
@@ -120,6 +136,19 @@ export class RelationshipManagementService {
         result: outcome.detail,
       }),
     );
+
+    void this.auditService.record({
+      eventType: `access.revoke.${outcome.success ? "success" : "failed"}`,
+      actor: { sub: "system", principalType: "service" },
+      resource: { type: request.objectType, id: request.objectId },
+      action: `revoke:${request.relation}`,
+      decision: { allowed: outcome.success },
+      metadata: {
+        subjectType: request.subjectType,
+        subjectId: request.subjectId,
+        relation: request.relation,
+      },
+    });
 
     return outcome;
   }
