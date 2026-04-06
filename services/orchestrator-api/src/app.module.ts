@@ -8,12 +8,21 @@ import { DurableAuditService } from "./application/audit/durable-audit.service";
 import { DecisionTraceEngine } from "./application/authz/decision-trace-engine";
 import { PolicyEngine } from "./application/authz/policies/policy-engine";
 import { RelationshipManagementService } from "./application/relationships/relationship-management.service";
+import { AssistantRuntimeService } from "./application/assistant-runtime/assistant-runtime.service";
+import { ObservabilityService } from "./application/observability/observability.service";
 import { DelegatedActionService } from "./application/delegated-action/delegated-action.service";
 import { NestAuditWriter } from "./application/audit/nest-audit-writer";
 import { ResourceAccessService } from "./application/resource-access/resource-access.service";
 import { DelegatedAccessModule } from "./delegated-access/delegated-access.module";
 import { AuditEventStore } from "./domain/audit/audit-event.store";
 import { PostgresAuditEventRepository } from "./infrastructure/database/audit-event.repository.impl";
+import { PostgresAssistantRepository } from "./infrastructure/database/assistant.repository.impl";
+import { PostgresOrganizationRepository } from "./infrastructure/database/organization.repository.impl";
+import { PostgresInvitationRepository } from "./infrastructure/database/invitation.repository.impl";
+import { PostgresOwnershipChangeRepository } from "./infrastructure/database/ownership-change.repository.impl";
+import { PostgresResourceRepository } from "./infrastructure/database/resource.repository.impl";
+import { PostgresRevocationRepository } from "./infrastructure/database/revocation.repository.impl";
+import { PostgresUserRepository } from "./infrastructure/database/user.repository.impl";
 import { AgentActionsController } from "./modules/agent-actions.controller";
 import { AuthzController } from "./modules/authz.controller";
 import { AuditEventsController } from "./modules/audit-events.controller";
@@ -27,6 +36,7 @@ import {
   OrganizationMembershipController,
   ResourceAccessController as RelationshipsResourceController,
 } from "./modules/relationships.controller";
+import { AssistantRuntimeController } from "./modules/assistant-runtime.controller";
 import { DelegatedActionController } from "./modules/delegated-action.controller";
 import { ResourceAccessController } from "./modules/resource-access.controller";
 import { TokenBrokerModule } from "./token-broker/token-broker.module";
@@ -36,6 +46,7 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
   controllers: [
     AgentActionsController,
     AssistantRelationshipController,
+    AssistantRuntimeController,
     AuditEventsController,
     AuthzController,
     DelegatedActionController,
@@ -52,6 +63,9 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
     PermissionGuard,
     AuditEventStore,
     DurableAuditService,
+    AssistantRuntimeService,
+    ObservabilityService,
+    { provide: "OBSERVABILITY", useExisting: ObservabilityService },
     DelegatedActionService,
     NestAuditWriter,
     { provide: "AUDIT_WRITER", useExisting: NestAuditWriter },
@@ -60,10 +74,26 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
     RelationshipManagementService,
     ResourceAccessService,
     // Audit repository — Postgres when DATABASE_URL is set
+    { provide: "AUDIT_REPOSITORY", useClass: PostgresAuditEventRepository },
+    { provide: "ASSISTANT_REPOSITORY", useClass: PostgresAssistantRepository },
     {
-      provide: "AUDIT_REPOSITORY",
-      useClass: PostgresAuditEventRepository,
+      provide: "INVITATION_REPOSITORY",
+      useClass: PostgresInvitationRepository,
     },
+    {
+      provide: "ORGANIZATION_REPOSITORY",
+      useClass: PostgresOrganizationRepository,
+    },
+    {
+      provide: "OWNERSHIP_CHANGE_REPOSITORY",
+      useClass: PostgresOwnershipChangeRepository,
+    },
+    { provide: "RESOURCE_REPOSITORY", useClass: PostgresResourceRepository },
+    {
+      provide: "REVOCATION_REPOSITORY",
+      useClass: PostgresRevocationRepository,
+    },
+    { provide: "USER_REPOSITORY", useClass: PostgresUserRepository },
     // OpenFGA RelationshipWriter
     {
       provide: "RELATIONSHIP_WRITER",

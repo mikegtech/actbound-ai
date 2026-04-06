@@ -15,6 +15,7 @@ import {
   index,
   jsonb,
   pgSchema,
+  pgTable,
   text,
   timestamp,
   uuid,
@@ -85,3 +86,141 @@ export const auditEvents = auditSchema.table(
 
 export type AuditEventRow = typeof auditEvents.$inferSelect;
 export type AuditEventInsert = typeof auditEvents.$inferInsert;
+
+// ── App tables (public schema) ──────────────────────────────
+
+export const organizations = pgTable("organizations", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  name: text("name").notNull(),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const assistants = pgTable("assistants", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  organizationId: text("organization_id").references(() => organizations.id),
+  name: text("name").notNull(),
+  assistantType: text("assistant_type").notNull().default("general"),
+  runtimeMode: text("runtime_mode").notNull().default("managed"),
+  status: text("status").notNull().default("active"),
+  description: text("description"),
+  createdBy: text("created_by"),
+  updatedBy: text("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const resources = pgTable("resources", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  organizationId: text("organization_id").references(() => organizations.id),
+  resourceType: text("resource_type").notNull().default("document"),
+  displayName: text("display_name").notNull(),
+  status: text("status").notNull().default("active"),
+  ownerType: text("owner_type"),
+  ownerId: text("owner_id"),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Users (app projection) ────────────────────────────────
+
+export const users = pgTable("users", {
+  sub: text("sub").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  displayName: text("display_name"),
+  email: text("email"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Invitations ───────────────────────────────────────────
+
+export const invitations = pgTable("invitations", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  organizationId: text("organization_id").references(() => organizations.id),
+  resourceId: text("resource_id"),
+  targetSub: text("target_sub"),
+  targetEmail: text("target_email"),
+  invitationType: text("invitation_type").notNull().default("membership"),
+  status: text("status").notNull().default("pending"),
+  invitedBy: text("invited_by"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Revocations ───────────────────────────────────────────
+
+export const revocations = pgTable("revocations", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  organizationId: text("organization_id"),
+  resourceId: text("resource_id"),
+  subjectSub: text("subject_sub"),
+  assistantId: text("assistant_id"),
+  revocationType: text("revocation_type").notNull(),
+  reason: text("reason"),
+  revokedBy: text("revoked_by"),
+  effectiveAt: timestamp("effective_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Ownership Changes ─────────────────────────────────────
+
+export const ownershipChanges = pgTable("ownership_changes", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  resourceId: text("resource_id").notNull(),
+  previousOwnerType: text("previous_owner_type"),
+  previousOwnerId: text("previous_owner_id"),
+  newOwnerType: text("new_owner_type").notNull(),
+  newOwnerId: text("new_owner_id").notNull(),
+  changedBy: text("changed_by"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type OrganizationRow = typeof organizations.$inferSelect;
+export type AssistantRow = typeof assistants.$inferSelect;
+export type ResourceRow = typeof resources.$inferSelect;
+export type UserRow = typeof users.$inferSelect;
+export type InvitationRow = typeof invitations.$inferSelect;
+export type RevocationRow = typeof revocations.$inferSelect;
+export type OwnershipChangeRow = typeof ownershipChanges.$inferSelect;
