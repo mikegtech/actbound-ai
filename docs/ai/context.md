@@ -191,15 +191,16 @@ actbound-ai/
 | 7   | Security Observability      | Complete    |
 | 8   | Security Resilience         | Complete    |
 | 9   | Security Enablement         | Complete    |
-| 10  | Auth0 Universal Login       | Not Started |
+| 10  | Auth0 Login + Multi-Issuer  | Not Started |
 | 11  | UI Foundation               | Not Started |
 | 12  | Sync Service Projections    | Not Started |
 | 13  | UI Features: Core           | Not Started |
 | 14  | Token Vault Integration     | Not Started |
 | 15  | UI Features: Security       | Not Started |
-| 16  | Agent Service Runtime       | Not Started |
-| 17  | Production Infrastructure   | Not Started |
-| 18  | Hardening and Observability | Not Started |
+| 16  | Keycloak Integration        | Not Started |
+| 17  | Agent Service Runtime       | Not Started |
+| 18  | Production Infrastructure   | Not Started |
+| 19  | Hardening and Observability | Not Started |
 
 ---
 
@@ -212,6 +213,9 @@ These must never be violated.
 - Every request has a principal. No anonymous internal access.
 - Three principal types: `user`, `service`, `agent`. Each has its own Auth0 application.
 - Custom claims use the `https://actbound.ai/` namespace.
+- Multi-issuer OIDC architecture: the platform supports multiple trusted identity providers per tenant. The backend normalizes external identities (`issuer + sub`) into one internal principal model. Permissions and authorization are provider-agnostic after normalization.
+- Supported issuer tiers: **Tier 1** — Auth0, Keycloak. **Tier 2** — Okta, generic OIDC.
+- Issuer trust is per-tenant. Each tenant configures which identity providers are trusted.
 
 ### Secrets
 
@@ -281,6 +285,7 @@ These must never be violated.
 ### JWT must include
 
 - `sub` — principal identifier
+- `iss` — issuer URL (used for multi-issuer resolution)
 - `aud` — API audience (`https://api.actbound.ai`)
 - `https://actbound.ai/principal_type` — `user`, `service`, or `agent`
 - `https://actbound.ai/roles` — role array
@@ -292,6 +297,19 @@ These must never be violated.
 - Resource ownership data
 - PII beyond `sub`
 - Secrets or API keys
+
+### Multi-Issuer Identity Resolution
+
+The backend normalizes tokens from any trusted issuer into an internal principal:
+
+```
+External token (issuer + sub) → Trusted Issuer Registry → Claim Normalization → Internal Principal
+```
+
+- Each issuer has a claim mapping profile (how groups become roles, where tenant_id lives)
+- Internal identity binding: `issuer|sub` → `internal_subject_id`
+- OpenFGA subjects use the internal ID, never raw external claims
+- The UI receives only the normalized principal + identity source metadata
 
 ---
 
@@ -470,17 +488,21 @@ Shared audit models (AuditEvent, ActivityTimeline, UserControlSummary), orchestr
 
 README polish, architecture documentation, demo flow documentation.
 
-### Phase 7 — Auth0 Universal Login Integration (Not Started)
+### Phase 7 — Auth0 Universal Login and Multi-Issuer Foundation (Not Started)
 
-Wire real Auth0 login/logout flows end-to-end. Bind `actbound-post-login-enrich` and `actbound-m2m-enrich` actions to Auth0 login and M2M credential exchange flows. Configure custom domain `auth.actbound.ai` on Auth0 tenant. Create demo users with assigned roles and org memberships. Remove demo principal fallback from JWT middleware (fail-closed). Wire `apps/web` Auth0Provider with real redirect callbacks and PKCE flow. Verify custom claims (`https://actbound.ai/` namespace) arrive correctly in access tokens. Update resource server audience to `https://api.actbound.ai`.
+Wire real Auth0 login/logout flows end-to-end as the first trusted issuer. Bind `actbound-post-login-enrich` and `actbound-m2m-enrich` actions to Auth0 login and M2M credential exchange flows. Configure custom domain `auth.actbound.ai` on Auth0 tenant. Create demo users with assigned roles and org memberships. Remove demo principal fallback from JWT middleware (fail-closed). Wire `apps/web` Auth0Provider with real redirect callbacks and PKCE flow. Verify custom claims (`https://actbound.ai/` namespace) arrive correctly in access tokens. Update resource server audience to `https://api.actbound.ai`.
+
+Establish multi-issuer architecture: implement trusted issuer registry (per-tenant issuer configuration), claim normalization pipeline (issuer-specific mapping profiles), and internal identity binding (`issuer|sub` → `internal_subject_id`). Auth0 is the first provider registered. Architecture must be generic OIDC so additional providers slot in without structural changes.
 
 **Depends on:** Phase 4 (Auth0 tenant provisioned), DNS for `auth.actbound.ai`.
 
 ### Phase 8 — UI Foundation (Not Started)
 
-Scaffold Aurora template into `apps/web`. Replace route map with product domains. Replace nav labels and page titles. Configure MUI theme with Sentinel design tokens (Manrope + Inter fonts, MD3 color palette, tonal layering, no-shadow elevation). Define gateway API client structure (`services/api/gateway/`). Set TanStack Query conventions (key naming, mutation invalidation, rendering states). Set Zustand limits (client UI state only). Build shared product primitives (`AppShell`, `PageHeader`, `SectionCard`, `MetricCard`, `EntityTable`, `StatusBadge`, `EmptyState`, `LoadingState`, `ErrorState`, `ConfirmDialog`, `DetailDrawer`, `TrustGauge`, `ActivityItem`, `PolicyBadge`). Scaffold empty routes/pages for all 9 feature domains. Wire Auth0 provider with `auth.actbound.ai`.
+Scaffold Aurora template into `apps/web`. Replace route map with product domains. Replace nav labels and page titles. Configure MUI theme with Sentinel design tokens (Manrope + Inter fonts, MD3 color palette, tonal layering, no-shadow elevation). Define gateway API client structure (`services/api/gateway/`). Set TanStack Query conventions (key naming, mutation invalidation, rendering states). Set Zustand limits (client UI state only). Build shared product primitives (`AppShell`, `PageHeader`, `SectionCard`, `MetricCard`, `EntityTable`, `StatusBadge`, `EmptyState`, `LoadingState`, `ErrorState`, `ConfirmDialog`, `DetailDrawer`, `TrustGauge`, `ActivityItem`, `PolicyBadge`, `IdentitySourceBadge`). Scaffold empty routes/pages for all 9 feature domains. Wire Auth0 provider with `auth.actbound.ai`.
 
-**Depends on:** Phase 7 (Auth0 login wired, real tokens available). See `docs/ai/context-ui.md` for full conventions.
+Multi-issuer UI awareness (Phase 1): use generic "Identity Provider" / "Trusted Issuer" language throughout — never hard-code provider names in UI chrome. Build `IdentitySourceBadge` component for Auth0, Keycloak, Okta, Custom OIDC labels. Implement auth error states for issuer/tenant mismatch, unprovisioned identity, and unlinked accounts. Login entry supports tenant-specific identity provider selection.
+
+**Depends on:** Phase 7 (Auth0 login wired, multi-issuer architecture established). See `docs/ai/context-ui.md` for full conventions.
 
 ### Phase 9 — Sync Service Projections (Not Started)
 
@@ -491,6 +513,8 @@ Replace the 6 TODO projection handlers in sync-processor with real implementatio
 ### Phase 10 — UI Features: Core (Not Started)
 
 Implement core product screens from Stitch designs. Dashboard: main dashboard with `MetricCard` grid, `TrustGauge`, activity timeline, wired to gateway queries. Assistants: directory (list, search, filter), control panel (detail, delegation, kill-switch). Organizations: directory and detail views. Resources: directory, protected resources, resource detail. Policies: policy list, policy editor, policy simulation trace. All backed by TanStack Query with gateway API adapters and mock-first development strategy.
+
+Multi-issuer UI awareness (Phase 2): user detail views show linked identity provider via `IdentitySourceBadge`. Org admin views show which users came from which IdP. Audit log entries display identity source attribution. Organization membership screens show provisioning source.
 
 **Depends on:** Phase 8 (UI foundation, shared primitives, routes scaffolded). See `docs/ai/context-ui.md` Sections 10-12.
 
@@ -504,25 +528,33 @@ Replace Token Vault stubs in `delegated-access.service.ts` with real Auth0 Token
 
 Implement security and observability screens from Stitch designs. Security: security posture dashboard, authorization logic graph, connected accounts and delegation management, user security controls. Audit: audit log with timeline view, activity filtering. Settings: platform configuration. Wire to real backend data from sync projections and Token Vault integration.
 
+Multi-issuer UI awareness (Phase 3): settings page includes trusted identity providers management per tenant (CRUD for issuer configurations). Display sync/binding health indicators per provider. Show provisioning status and last sync time. Account linking review for multi-provider users. Provider badges: Auth0, Keycloak, Okta, Custom OIDC.
+
 **Depends on:** Phase 9 (sync projections live), Phase 11 (Token Vault live), Phase 10 (core UI complete). See `docs/ai/context-ui.md` Sections 10-12.
 
-### Phase 13 — Agent Service Runtime (Not Started)
+### Phase 13 — Keycloak Integration (Not Started)
+
+Add Keycloak as second trusted identity provider. Implement Keycloak-specific claim mapping profile (realm roles → internal roles, groups → org membership). Add Keycloak JWKS endpoint to trusted issuer registry. Implement Keycloak-specific provisioning sync (user federation events → sync service). Test full flow: Keycloak login → claim normalization → internal principal → OpenFGA subject → authorized API access. Validate multi-issuer coexistence: users from Auth0 and Keycloak in the same tenant with unified permissions.
+
+**Depends on:** Phase 7 (multi-issuer architecture), Phase 9 (sync projections for provisioning events).
+
+### Phase 14 — Agent Service Runtime (Not Started)
 
 Build out `services/agent-service` with real business logic. Implement assistant invocation lifecycle (request → authorize → execute → audit). Wire full delegation intersection enforcement: OpenFGA executor check + delegator check + user authorization check. Implement tool execution with scoped secret retrieval via Token Vault. Implement kill-switch (disable Auth0 M2M app + purge OpenFGA tuples + revoke active sessions). Connect assistant runtime to sync service for state change events.
 
 **Depends on:** Phase 9 (OpenFGA projections), Phase 11 (Token Vault for secret retrieval).
 
-### Phase 14 — Production Infrastructure (Not Started)
+### Phase 15 — Production Infrastructure (Not Started)
 
 Deploy to AWS with proper isolation. Terraform modules for VPC (public/private subnets), ECS/Fargate task definitions, RDS PostgreSQL, ElastiCache Redis. Environment isolation: separate Auth0 tenants, AWS accounts, and data stores per environment (dev/staging/prod). CloudWatch log shipping with structured JSON parsing. Secrets Manager rotation Lambda for automated credential cycling. Custom domain routing: `api.actbound.ai` → orchestrator-api, `auth.actbound.ai` → Auth0 tenant.
 
 **Depends on:** Phase 7 (Auth0 custom domain), AWS account setup.
 
-### Phase 15 — Hardening and Observability (Not Started)
+### Phase 16 — Hardening and Observability (Not Started)
 
 Production-grade operational readiness. Per-principal rate limiting on orchestrator-api. Step-up authentication for high-risk operations (secret access, delegation changes, kill-switch). Real CloudTrail integration for infrastructure audit trail. Prometheus/Grafana metrics to replace in-memory observability counters. Recovery drill automation (scripted restore + validation). Expand test coverage to 70%+ across services and packages.
 
-**Depends on:** Phase 14 (production infrastructure deployed).
+**Depends on:** Phase 15 (production infrastructure deployed).
 
 ---
 

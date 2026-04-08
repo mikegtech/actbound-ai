@@ -253,13 +253,14 @@ Those belong in TanStack Query.
 
 ### Rules
 
-- SPA uses Auth0 PKCE flow via `@auth0/auth0-react`
+- SPA uses OIDC PKCE flow (Auth0 as primary, Keycloak as second provider)
 - Custom domain: `auth.actbound.ai`
 - Audience: `https://api.actbound.ai`
 - Gateway validates tokens and enforces the backend policy boundary
 - UI only handles user/session context needed for presentation
-- No tokens stored in localStorage (Auth0 SDK manages in-memory or cookie)
+- No tokens stored in localStorage (Auth SDK manages in-memory or cookie)
 - Auth guards protect routes: `AuthGuard` (requires session), `GuestGuard` (public only)
+- Multi-issuer: the UI receives a normalized principal from the backend regardless of which IdP issued the token
 
 ### Auth Context
 
@@ -269,9 +270,16 @@ interface AuthContext {
   isLoading: boolean;
   user: User | null;
   principal: Principal | null; // Normalized from JWT claims
-  loginWithRedirect: () => void;
+  identitySource: IdentitySource | null; // Which IdP the user came from
+  loginWithRedirect: (options?: LoginOptions) => void;
   logout: () => void;
   getAccessTokenSilently: () => Promise<string>;
+}
+
+interface IdentitySource {
+  provider: "auth0" | "keycloak" | "okta" | "oidc"; // Provider type
+  issuerLabel: string; // Human-readable label (e.g., "Acme SSO")
+  issuerUrl: string; // Issuer URL
 }
 ```
 
@@ -289,7 +297,91 @@ axiosInstance.interceptors.request.use(async (config) => {
 
 ---
 
-## 8. Design System: The Architectural Sentinel
+## 8. Multi-Issuer UI Requirements
+
+ActBound supports multiple trusted identity providers per tenant. The backend normalizes those identities into one internal permission model. The UI displays identity source, provisioning state, and trust-related errors, but treats permissions and authorization results as provider-agnostic.
+
+### What the UI Knows
+
+- Which identity provider the current user came from
+- Which providers a tenant trusts
+- How to display identity source in admin, audit, and user-control views
+- What error states look like when issuer/tenant mismatches happen
+
+### What the UI Does NOT Own
+
+- JWKS validation or token signature verification
+- Issuer trust registry internals
+- Claim normalization or mapping profiles
+- `issuer|sub` → internal subject binding algorithm
+- OpenFGA subject construction
+
+### Supported Provider Types
+
+| Provider    | Tier | Status          |
+| ----------- | ---- | --------------- |
+| Auth0       | 1    | Primary         |
+| Keycloak    | 1    | Second provider |
+| Okta        | 2    | Future          |
+| Custom OIDC | 2    | Future          |
+
+### UI Language Rules
+
+Use generic terminology throughout — never hard-code provider names in navigation, labels, or page structure:
+
+- "Identity Provider" not "Auth0"
+- "Trusted Issuer" not "our SSO"
+- "Provider Type" with badge icons for Auth0, Keycloak, Okta, Custom OIDC
+
+### Identity Display Model
+
+The UI thinks in terms of two layers:
+
+```
+Internal ActBound identity          External identity source
+─────────────────────────           ────────────────────────
+John Davis                          Source: Keycloak
+Role: Admin                         Issuer: sso.acmerealty.com
+Tenant: Acme Realty                 External ID: (hidden unless admin debug)
+```
+
+Never show raw `sub` values or `issuer|sub` pairs unless in an advanced admin/debug drawer.
+
+### Error States
+
+The UI must handle these backend responses gracefully:
+
+| Error                                    | UI Behavior                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| Issuer not trusted for tenant            | "Your identity provider is not authorized for this organization" |
+| Valid token, no linked internal identity | "Your account has not been provisioned yet"                      |
+| Identity not provisioned                 | "Contact your administrator to complete setup"                   |
+| Tenant mismatch                          | "You are signed in to the wrong organization"                    |
+| Account exists, not bound to this org    | "Your account is not a member of this organization"              |
+
+### Surfaces Affected by Multi-Issuer
+
+| Surface          | What to show                                             |
+| ---------------- | -------------------------------------------------------- |
+| Login / sign-in  | Tenant-specific IdP selection (which providers to offer) |
+| User profile     | Identity source badge, linked provider                   |
+| Org membership   | Which users came from which IdP                          |
+| Audit log        | Identity source attribution per event                    |
+| User control     | Connected identities, provisioning state                 |
+| Settings (admin) | Trusted IdPs per tenant, sync health, last sync time     |
+| Error pages      | Issuer/tenant mismatch messaging                         |
+
+### Phased UI Awareness
+
+**Phase 8 (UI Foundation):** Generic IdP language, `IdentitySourceBadge` component, auth error states, login supports provider selection.
+
+**Phase 10 (UI Core):** User detail shows linked IdP. Org admin shows users by provider. Audit entries show identity source.
+
+**Phase 12 (UI Security):** Settings page for trusted IdP management. Sync/binding health indicators. Account linking review.
+
+---
+
+## 9. Design System: The Architectural Sentinel
 
 The visual language is defined in the Stitch design exports (`~/Downloads/stitch/actbound_sentinel/DESIGN.md`). Implementation uses MUI theme customization to express these tokens.
 
@@ -394,30 +486,31 @@ typography: {
 
 ---
 
-## 9. Shared Product Primitives
+## 10. Shared Product Primitives
 
 Build these before page implementation to maintain visual consistency:
 
-| Component       | Purpose                                            |
-| --------------- | -------------------------------------------------- |
-| `AppShell`      | Main layout with sidebar, header, content area     |
-| `PageHeader`    | Page title, description, breadcrumbs, actions      |
-| `SectionCard`   | Tonal-layered content block (no shadow)            |
-| `MetricCard`    | Key metric display with label, value, trend        |
-| `EntityTable`   | MUI DataGrid wrapper with Sentinel styling         |
-| `StatusBadge`   | Pill badge with semantic color mapping             |
-| `EmptyState`    | Centered illustration + message + action CTA       |
-| `LoadingState`  | Skeleton loader matching page layout               |
-| `ErrorState`    | Error message + retry action                       |
-| `ConfirmDialog` | Glass-effect confirmation modal                    |
-| `DetailDrawer`  | Side panel for entity detail / inline editing      |
-| `TrustGauge`    | Radial trust score display (0-100)                 |
-| `ActivityItem`  | Timeline entry with icon, actor, action, timestamp |
-| `PolicyBadge`   | Compliance indicator (HIPAA, SOC2, etc.)           |
+| Component             | Purpose                                             |
+| --------------------- | --------------------------------------------------- |
+| `AppShell`            | Main layout with sidebar, header, content area      |
+| `PageHeader`          | Page title, description, breadcrumbs, actions       |
+| `SectionCard`         | Tonal-layered content block (no shadow)             |
+| `MetricCard`          | Key metric display with label, value, trend         |
+| `EntityTable`         | MUI DataGrid wrapper with Sentinel styling          |
+| `StatusBadge`         | Pill badge with semantic color mapping              |
+| `EmptyState`          | Centered illustration + message + action CTA        |
+| `LoadingState`        | Skeleton loader matching page layout                |
+| `ErrorState`          | Error message + retry action                        |
+| `ConfirmDialog`       | Glass-effect confirmation modal                     |
+| `DetailDrawer`        | Side panel for entity detail / inline editing       |
+| `TrustGauge`          | Radial trust score display (0-100)                  |
+| `ActivityItem`        | Timeline entry with icon, actor, action, timestamp  |
+| `PolicyBadge`         | Compliance indicator (HIPAA, SOC2, etc.)            |
+| `IdentitySourceBadge` | Provider badge (Auth0, Keycloak, Okta, Custom OIDC) |
 
 ---
 
-## 10. Screen Inventory (from Stitch Designs)
+## 11. Screen Inventory (from Stitch Designs)
 
 34 screens exported from Figma. Design source: `~/Downloads/stitch/`
 
@@ -488,7 +581,7 @@ Build these before page implementation to maintain visual consistency:
 
 ---
 
-## 11. Navigation Structure
+## 12. Navigation Structure
 
 ### Sidebar Navigation
 
@@ -514,7 +607,7 @@ Settings
 
 ---
 
-## 12. Mock-First Development
+## 13. Mock-First Development
 
 Build UI against stable contracts before real backend integration.
 
@@ -534,52 +627,60 @@ Build UI against stable contracts before real backend integration.
 
 ---
 
-## 13. Implementation Phases
+## 14. Implementation Phases
 
-### Phase 0 — Hardening Pass
+### Phase 0 — Hardening Pass (maps to context.md Phase 8)
 
 - Scaffold Aurora template into `apps/web`
 - Replace route map with product domains (Section 6)
 - Replace nav labels and page titles with real product names
-- Configure MUI theme with Sentinel design tokens (Section 8)
+- Configure MUI theme with Sentinel design tokens (Section 9)
 - Configure Manrope + Inter fonts
 - Define gateway API client structure (Section 2)
 - Set TanStack Query conventions (Section 4)
 - Set Zustand usage limits (Section 5)
-- Build shared product primitives (Section 9)
+- Build shared product primitives (Section 10), including `IdentitySourceBadge`
 - Scaffold empty routes/pages for all features
 - Wire Auth0 provider with `auth.actbound.ai` domain
+- Use generic "Identity Provider" language throughout — no hard-coded provider names
+- Implement auth error states for issuer/tenant mismatch (Section 8)
+- Login entry supports tenant-specific IdP selection
 
-### Phase 1 — App Shell + Dashboard
+### Phase 1 — App Shell + Dashboard (maps to context.md Phase 8)
 
 - Implement `AppShell` with sidebar navigation matching Stitch designs
 - Implement main dashboard with `MetricCard` grid, `TrustGauge`, activity timeline
 - Wire dashboard queries to gateway API
 - Implement `LoadingState`, `EmptyState`, `ErrorState` patterns
 
-### Phase 2 — Assistants + Organizations
+### Phase 2 — Assistants + Organizations (maps to context.md Phase 10)
 
 - Assistant directory (list, search, filter)
 - Assistant control panel (detail, delegation, kill-switch)
 - Organization directory and detail views
 - Entity tables with Sentinel styling
+- User detail views show linked IdP via `IdentitySourceBadge`
+- Org admin views show which users came from which provider
+- Audit entries display identity source attribution
 
-### Phase 3 — Policies + Security
+### Phase 3 — Policies + Security (maps to context.md Phase 10)
 
 - Policy list and editor
 - Policy simulation trace
 - Security dashboard and authorization logic graph
 - Connected accounts and delegation management
 
-### Phase 4 — Audit + Settings
+### Phase 4 — Audit + Settings (maps to context.md Phase 12)
 
-- Audit log with timeline view
-- Platform settings
+- Audit log with timeline view (identity source per event)
+- Platform settings including trusted IdP management per tenant
+- Sync/binding health indicators per provider
 - User security controls
+- Account linking review for multi-provider users
 
 ---
 
-## 14. Environment Variables
+## 15. Environment Variables
 
 ```
 VITE_API_URL=http://localhost:3001        # Orchestrator-API gateway
@@ -591,7 +692,7 @@ VITE_APP_PORT=5173
 
 ---
 
-## 15. Hard Boundaries
+## 16. Hard Boundaries
 
 1. **No backend authorization logic in React.** The UI renders decisions, not makes them.
 2. **No imports from `packages/authorization` or `packages/openfga`.** Authorization arrives via API.
