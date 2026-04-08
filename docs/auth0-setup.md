@@ -1,4 +1,4 @@
-# Auth0 Dev/Hackathon Setup for ActBound AI
+# Auth0 Dev Setup for ActBound AI
 
 ## Environment Strategy
 
@@ -50,7 +50,7 @@ This is the audience for all ActBound JWTs. Both user and M2M tokens target this
 | Type           | Machine to Machine                          |
 | Authorized API | `actbound-api` (`https://api.actbound.dev`) |
 
-Used by `services/orchestrator-api` and `services/agent-service` for service-to-service authentication. In production, each service and agent instance gets its own M2M app (ADR-007, ADR-008). For dev/hackathon, a single shared M2M app is acceptable.
+Used by `services/orchestrator-api` and `services/agent-service` for service-to-service authentication. In production, each service and agent instance gets its own M2M app (ADR-007, ADR-008). For dev, a single shared M2M app is acceptable.
 
 ### 4. Connections
 
@@ -160,7 +160,7 @@ exports.onExecuteCredentialsExchange = async (event, api) => {
 
 ## Token Broker Pattern (Required)
 
-The token broker in `services/orchestrator-api` is the **required pattern** for all machine token issuance. This applies to both the hackathon dev setup and the future production migration.
+The token broker in `services/orchestrator-api` is the **required pattern** for all machine token issuance. This applies to the dev setup and future production deployment.
 
 ### Why
 

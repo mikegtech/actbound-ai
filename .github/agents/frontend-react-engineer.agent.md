@@ -30,7 +30,7 @@ Read before any work:
 - Create shared presentational components in `packages/ui`
 - Consume typed contracts and clients from `packages/sdk`
 - Render backend-issued permission decisions, broker metadata, and delegated-access state
-- Keep the UI responsive, accessible, and hackathon-demo-ready
+- Keep the UI responsive and accessible
 
 ## Hard Boundaries
 

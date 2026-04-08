@@ -59,7 +59,7 @@ This document defines the complete infrastructure topology, network design, envi
 
 ### 2.1 Decision: Single AWS Account with VPC-Level Isolation
 
-For a small team and hackathon-origin project, multi-account AWS is premature overhead. Use a single AWS account with separate VPCs per environment.
+For a small team, multi-account AWS is premature overhead. Use a single AWS account with separate VPCs per environment.
 
 | Environment | VPC                    | Secrets Manager prefix | OpenFGA instance        | Database   |
 | ----------- | ---------------------- | ---------------------- | ----------------------- | ---------- |

@@ -102,7 +102,7 @@ export class AuditEventStore {
     return `${verb} ${resource}${outcome}`.trim();
   }
 
-  // Seed demo events for hackathon presentation
+  // Seed demo events for development
   seedDemoEvents(actorId: string): void {
     if (this.events.length > 0) return;
 

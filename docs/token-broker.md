@@ -40,4 +40,4 @@ No raw token material is returned or stored in the repo.
 - TODO: Replace delegated placeholder issuance with Auth0 Token Vault retrieval
 - TODO: Add stronger rate limiting, budget controls, and distributed invalidation around the broker path
 
-The current foundation keeps those seams explicit so the hackathon demo can explain how token reuse lowers unnecessary M2M pressure before the final Auth0-specific wiring lands.
+The current foundation keeps those seams explicit so the architecture demonstrates how token reuse lowers unnecessary M2M pressure before the final Auth0-specific wiring lands.

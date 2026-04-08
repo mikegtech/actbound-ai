@@ -295,10 +295,10 @@ Disable all agent M2M applications in a tenant:
 
 | Impact            | Mitigation                                                                          | RTO                  |
 | ----------------- | ----------------------------------------------------------------------------------- | -------------------- |
-| All services down | Single-region deployment (hackathon-scale). Accept downtime.                        | AWS recovery (hours) |
+| All services down | Single-region deployment. Accept downtime until multi-region is justified.          | AWS recovery (hours) |
 | Data at risk      | RDS automated backups. S3 cross-region replication for critical backups (optional). | RPO: minutes (PITR)  |
 
-Multi-region is deferred until scale justifies it. For hackathon, accept single-region risk.
+Multi-region is deferred until scale justifies it.
 
 ### 8.2 VPS Compromise
 

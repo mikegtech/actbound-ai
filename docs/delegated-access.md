@@ -69,4 +69,4 @@ Step-up is modeled now, but not fully integrated yet.
 - TODO: Auth0 Token Vault delegated token retrieval
 - TODO: Real step-up authentication and verification
 
-This keeps the hackathon story aligned with the judging criteria: strong security model, clear user control, technically coherent architecture, and a believable path from demo-safe placeholders to a production-ready Auth0 integration.
+This architecture provides a clear path from demo-safe placeholders to a production-ready Auth0 integration.

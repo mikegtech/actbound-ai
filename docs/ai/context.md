@@ -8,13 +8,7 @@ This is the single source of truth for the platform's architecture, decisions, i
 
 **Name:** ActBound AI
 
-**Hackathon:** Authorized to Act: AI Agents with Auth0
-
-**Purpose:** A secure platform that lets users safely authorize AI agents to act on their behalf. By combining delegated consent, scoped permissions, token protection, and auditability, it turns AI agents into secure operators of real APIs instead of uncontrolled credential consumers.
-
-**Judges score equally on:** Security Model, User Control, Technical Execution, Design, Potential Impact, Insight Value.
-
-**Hard requirements:** Auth0 Token Vault, public code repository, public app/demo link, demo video under 3 minutes, English materials.
+**Purpose:** A secure Zero Trust platform that lets users safely authorize AI agents to act on their behalf. By combining delegated consent, scoped permissions, token protection, and auditability, it turns AI agents into secure operators of real APIs instead of uncontrolled credential consumers.
 
 ---
 
@@ -43,9 +37,11 @@ actbound-ai/
 │   └── web/                          # React UI (Vite)
 ├── services/
 │   ├── orchestrator-api/             # External-facing NestJS service
+│   ├── sync-service/                 # Background sync worker (queue, projections, DLQ)
 │   └── agent-service/                # Internal NestJS service
 ├── packages/
 │   ├── authorization/                # Policy engine (RBAC + ABAC + OpenFGA)
+│   ├── openfga/                      # OpenFGA model, RelationshipWriter, TupleSyncService
 │   ├── sdk/                          # Zod schemas, DTOs, typed clients, OpenAPI
 │   ├── ui/                           # Shared presentational components
 │   └── config/                       # Shared ESLint, Prettier, TSConfig
@@ -183,17 +179,23 @@ actbound-ai/
 
 ## 6. Epic Status Tracker
 
-| #   | Epic                        | Status   |
-| --- | --------------------------- | -------- |
-| 1   | Identity Foundation         | Complete |
-| 2   | Secrets Platform            | Complete |
-| 3   | Authorization Control Plane | Complete |
-| 4   | Application Enforcement     | Complete |
-| 5   | Agent Security              | Complete |
-| 6   | Secure Infrastructure       | Complete |
-| 7   | Security Observability      | Complete |
-| 8   | Security Resilience         | Complete |
-| 9   | Security Enablement         | Complete |
+| #   | Epic                        | Status      |
+| --- | --------------------------- | ----------- |
+| 1   | Identity Foundation         | Complete    |
+| 2   | Secrets Platform            | Complete    |
+| 3   | Authorization Control Plane | Complete    |
+| 4   | Application Enforcement     | Complete    |
+| 5   | Agent Security              | Complete    |
+| 6   | Secure Infrastructure       | Complete    |
+| 7   | Security Observability      | Complete    |
+| 8   | Security Resilience         | Complete    |
+| 9   | Security Enablement         | Complete    |
+| 10  | Auth0 Universal Login       | Not Started |
+| 11  | Sync Service Projections    | Not Started |
+| 12  | Token Vault Integration     | Not Started |
+| 13  | Agent Service Runtime       | Not Started |
+| 14  | Production Infrastructure   | Not Started |
+| 15  | Hardening and Observability | Not Started |
 
 ---
 
@@ -454,15 +456,51 @@ Broker status/preview/retrieval, Redis with fallback, safe metadata only.
 
 ### Phase 4 — Auth0 Token Vault Delegated Access (Complete)
 
-Delegated-access models, provider connections, consent preview, vault sessions, step-up markers, Token Vault TODO seams. Auth0 dev/hackathon tenant provisioned (actbound-web, actbound-api, actbound-m2m, token enrichment actions).
+Delegated-access models, provider connections, consent preview, vault sessions, step-up markers, Token Vault TODO seams. Auth0 dev tenant provisioned (actbound-web, actbound-api, actbound-m2m, token enrichment actions).
 
 ### Phase 5 — Auditability and User Control (Complete)
 
 Shared audit models (AuditEvent, ActivityTimeline, UserControlSummary), orchestrator endpoints (GET /me/activity, GET /me/control-summary, enriched GET /audit-events), authorization evaluation for audit visibility (viewer role added), web dashboard with User Control and Activity Timeline panels, demo-seeded activity events.
 
-### Phase 6 — Hackathon Submission Readiness (In Progress)
+### Phase 6 — Documentation and Release Readiness (Complete)
 
-README polish, demo flow, video script, Devpost description draft, judging criteria mapping, submission checklist. Hackathon docs at `docs/hackathon/`.
+README polish, architecture documentation, demo flow documentation.
+
+### Phase 7 — Auth0 Universal Login Integration (Not Started)
+
+Wire real Auth0 login/logout flows end-to-end. Bind `actbound-post-login-enrich` and `actbound-m2m-enrich` actions to Auth0 login and M2M credential exchange flows. Configure custom domain `auth.actbound.ai` on Auth0 tenant. Create demo users with assigned roles and org memberships. Remove demo principal fallback from JWT middleware (fail-closed). Wire `apps/web` Auth0Provider with real redirect callbacks and PKCE flow. Verify custom claims (`https://actbound.ai/` namespace) arrive correctly in access tokens. Update resource server audience to `https://api.actbound.ai`.
+
+**Depends on:** Phase 4 (Auth0 tenant provisioned), DNS for `auth.actbound.ai`.
+
+### Phase 8 — Sync Service Projections (Not Started)
+
+Replace the 6 TODO projection handlers in sync-processor with real implementations. `org.membership.changed` → write OpenFGA tuples + upsert app DB org membership. `user.projected` → upsert user in app DB. `invitation.accepted` → create OpenFGA tuple + update invitation record. `access.revoked` → delete OpenFGA tuple + create revocation record. `assistant.delegation.changed` → update OpenFGA delegation tuples. `reconciliation.requested` → compare expected state vs active tuples, emit drift report. Promote sync queue from in-memory to Redis (BullMQ). Connect existing `TupleSyncService` in `packages/openfga` to the sync processor pipeline.
+
+**Depends on:** Phase 7 (real identity tokens needed for sync events).
+
+### Phase 9 — Token Vault Integration (Not Started)
+
+Replace Token Vault stubs in `delegated-access.service.ts` with real Auth0 Token Vault API calls. Implement delegated OAuth flow (initiate → callback → persist). Wire consent grant/revoke through Auth0 APIs. Implement vault session lifecycle (create, expire, revoke). Add real provider connections (Google, Slack as initial targets). Replace placeholder connection IDs (`conn_demo_vault`, `conn_demo_salesforce`) with live provider configurations.
+
+**Depends on:** Phase 7 (authenticated users), Auth0 Token Vault feature enabled on tenant.
+
+### Phase 10 — Agent Service Runtime (Not Started)
+
+Build out `services/agent-service` with real business logic. Implement assistant invocation lifecycle (request → authorize → execute → audit). Wire full delegation intersection enforcement: OpenFGA executor check + delegator check + user authorization check. Implement tool execution with scoped secret retrieval via Token Vault. Implement kill-switch (disable Auth0 M2M app + purge OpenFGA tuples + revoke active sessions). Connect assistant runtime to sync service for state change events.
+
+**Depends on:** Phase 8 (OpenFGA projections), Phase 9 (Token Vault for secret retrieval).
+
+### Phase 11 — Production Infrastructure (Not Started)
+
+Deploy to AWS with proper isolation. Terraform modules for VPC (public/private subnets), ECS/Fargate task definitions, RDS PostgreSQL, ElastiCache Redis. Environment isolation: separate Auth0 tenants, AWS accounts, and data stores per environment (dev/staging/prod). CloudWatch log shipping with structured JSON parsing. Secrets Manager rotation Lambda for automated credential cycling. Custom domain routing: `api.actbound.ai` → orchestrator-api, `auth.actbound.ai` → Auth0 tenant.
+
+**Depends on:** Phase 7 (Auth0 custom domain), AWS account setup.
+
+### Phase 12 — Hardening and Observability (Not Started)
+
+Production-grade operational readiness. Per-principal rate limiting on orchestrator-api. Step-up authentication for high-risk operations (secret access, delegation changes, kill-switch). Real CloudTrail integration for infrastructure audit trail. Prometheus/Grafana metrics to replace in-memory observability counters. Recovery drill automation (scripted restore + validation). Expand test coverage to 70%+ across services and packages.
+
+**Depends on:** Phase 11 (production infrastructure deployed).
 
 ---
 
@@ -529,21 +567,20 @@ These apply to every AI agent and tool operating in this repo.
 ## 20. Auth0 Tenant
 
 - Tenant: `dev-6az71xw7wqwtmp0q.us.auth0.com`
+- Custom domain: `auth.actbound.ai` (to be configured in Phase 7)
 - MCP access: configured in `.mcp.json` via `@auth0/auth0-mcp-server`
-- **Auth0 dev/hackathon setup is documented and provisioned** — see `docs/auth0-setup.md`
+- **Auth0 dev setup is documented and provisioned** — see `docs/auth0-setup.md`
 - `actbound-web` (SPA): client ID `VKm1ClfzHqI0VSKtjtzAtBDbgeBXAVLp`
-- `actbound-api` (resource server): audience `https://api.actbound.dev`, 14 scopes
+- `actbound-api` (resource server): audience `https://api.actbound.ai`, 14 scopes (migrating from `https://api.actbound.dev`)
 - `actbound-m2m` (M2M): client ID `ljGntsIp3TqZrXxvvdjNzH9MONSX68OQ`, granted all 14 scopes
 - Actions: `actbound-post-login-enrich` and `actbound-m2m-enrich` deployed (need manual flow binding)
 - Token broker pattern is the required M2M issuance path (see `docs/auth0-setup.md` section "Token Broker Pattern")
-- Remaining: bind actions to flows, create demo users
+- Remaining: configure custom domain DNS, bind actions to flows, create demo users, migrate audience URL
 
 ---
 
-## 21. Public Repo Guidance
+## 21. Repository Guidance
 
 - No secrets, no internal-only credentials or endpoints
-- Keep docs clear and judge-friendly
-- Public branch will be created later with no history
+- Keep docs clear and accurate
 - Working branch: `feat/actbound-foundation`
-- Planned public branch: `hackathon-public`

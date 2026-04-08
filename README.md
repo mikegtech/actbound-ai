@@ -126,11 +126,17 @@ Key decisions:
 | Token Broker and M2M Optimization      | Complete    |
 | Auth0 Token Vault Delegated Access     | Complete    |
 | Auditability and User Control          | Complete    |
-| Hackathon Submission Readiness         | In Progress |
+| Documentation and Release Readiness    | Complete    |
+| Auth0 Universal Login Integration      | Not Started |
+| Sync Service Projections               | Not Started |
+| Token Vault Integration                | Not Started |
+| Agent Service Runtime                  | Not Started |
+| Production Infrastructure              | Not Started |
+| Hardening and Observability            | Not Started |
 
-**Implemented:** Authorization engine, token broker, delegated access, user control dashboard, activity timeline, Auth0 dev tenant.
+**Implemented:** Authorization engine (RBAC + ABAC + OpenFGA), token broker, delegated access models, user control dashboard, activity timeline, assistant runtime service, durable audit, observability, resilience framework, 8 Postgres repositories, 43 ADRs, Auth0 dev tenant.
 
-**Explicit TODO seams:** Real Auth0 Universal Login, real Token Vault API calls, real M2M client credentials exchange, production step-up authentication. These are clearly marked in the codebase and documented in [docs/auth0-setup.md](docs/auth0-setup.md).
+**Next:** Auth0 Universal Login wiring (`auth.actbound.ai`), sync service projections, Token Vault API integration, agent service runtime, production AWS infrastructure. See [docs/ai/context.md](docs/ai/context.md) for full roadmap.
 
 ## License
 

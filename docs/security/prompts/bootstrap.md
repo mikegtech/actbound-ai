@@ -13,7 +13,7 @@ Project constraints:
 - developer experience matters
 - local hooks must stay reasonably fast
 - CI is the final enforcement layer
-- this is a public-facing hackathon repo eventually, so secret prevention and repo hygiene are critical
+- this is a public-facing repo, so secret prevention and repo hygiene are critical
 - use TypeScript/React/NestJS ecosystem conventions
 - prefer maintainable, well-known tooling
 - do not overengineer

@@ -10,7 +10,7 @@
  * - The downstream AuthorizationContextMiddleware uses the principal
  *
  * For production: change to fail-closed (reject without valid token).
- * For hackathon: demo fallback allows the app to work without Auth0 configured.
+ * Currently: demo fallback allows the app to work without Auth0 configured.
  */
 
 import { Injectable, Logger, type NestMiddleware } from "@nestjs/common";
@@ -86,12 +86,12 @@ export class JwtAuthMiddleware implements NestMiddleware {
         `Authenticated: ${request.principal.sub} (${request.principal.principalType})`,
       );
     } catch (err) {
-      // JWT validation failed — fail-closed in production, demo fallback for hackathon
+      // JWT validation failed — demo fallback until Auth0 Universal Login is wired
       this.logger.warn(
         `JWT validation failed: ${err instanceof Error ? err.message : String(err)}`,
       );
 
-      // For hackathon: fallback to demo instead of 401
+      // TODO: Remove demo fallback when Auth0 login is fully wired
       // TODO: Change to throw UnauthorizedException for production
       request.principal = demoPrincipal({ sub: "unauthenticated" });
     }
