@@ -77,6 +77,7 @@ actbound-ai/
 | [resilience-recovery.md](../architecture/resilience-recovery.md)                           | Backup, recovery ordering, playbooks, break-glass       |
 | [security-enablement.md](../architecture/security-enablement.md)                           | SDKs, templates, standards, guardrails, workflow        |
 | [service-layout.md](../architecture/service-layout.md)                                     | Hexagonal architecture layer rules                      |
+| [context-ui.md](context-ui.md)                                                             | Frontend architecture, design system, UI conventions    |
 
 ---
 
