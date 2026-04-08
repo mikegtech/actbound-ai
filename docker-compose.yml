@@ -64,6 +64,23 @@ services:
       - openfga
       - postgres
 
+  sync-service:
+    build:
+      context: .
+      dockerfile: services/sync-service/Dockerfile
+    container_name: actbound-sync
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: "3003"
+      DATABASE_URL: postgres://openfga:openfga@postgres:5432/actbound
+      REDIS_URL: redis://redis:6379
+      OPENFGA_API_URL: http://openfga:8080
+    depends_on:
+      - redis
+      - openfga
+      - postgres
+
   web:
     build:
       context: .

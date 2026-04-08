@@ -10,6 +10,7 @@ import { PolicyEngine } from "./application/authz/policies/policy-engine";
 import { RelationshipManagementService } from "./application/relationships/relationship-management.service";
 import { AssistantRuntimeService } from "./application/assistant-runtime/assistant-runtime.service";
 import { ObservabilityService } from "./application/observability/observability.service";
+import { ResilienceService } from "./application/resilience/resilience.service";
 import { DelegatedActionService } from "./application/delegated-action/delegated-action.service";
 import { NestAuditWriter } from "./application/audit/nest-audit-writer";
 import { ResourceAccessService } from "./application/resource-access/resource-access.service";
@@ -66,6 +67,8 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
     AssistantRuntimeService,
     ObservabilityService,
     { provide: "OBSERVABILITY", useExisting: ObservabilityService },
+    ResilienceService,
+    { provide: "RESILIENCE", useExisting: ResilienceService },
     DelegatedActionService,
     NestAuditWriter,
     { provide: "AUDIT_WRITER", useExisting: NestAuditWriter },

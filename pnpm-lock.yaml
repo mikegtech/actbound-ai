@@ -213,6 +213,39 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
+  services/sync-service:
+    dependencies:
+      '@actbound/openfga':
+        specifier: workspace:*
+        version: link:../../packages/openfga
+      '@actbound/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@nestjs/common':
+        specifier: ^11.0.1
+        version: 11.1.16(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^11.0.1
+        version: 11.1.16(@nestjs/common@11.1.16(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: ^11.0.1
+        version: 11.1.16(@nestjs/common@11.1.16(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.20.0)
+      pg:
+        specifier: ^8.20.0
+        version: 8.20.0
+      redis:
+        specifier: ^4.7.0
+        version: 4.7.1
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+
 packages:
 
   '@asteasolutions/zod-to-openapi@7.3.4':
