@@ -192,11 +192,14 @@ actbound-ai/
 | 8   | Security Resilience         | Complete    |
 | 9   | Security Enablement         | Complete    |
 | 10  | Auth0 Universal Login       | Not Started |
-| 11  | Sync Service Projections    | Not Started |
-| 12  | Token Vault Integration     | Not Started |
-| 13  | Agent Service Runtime       | Not Started |
-| 14  | Production Infrastructure   | Not Started |
-| 15  | Hardening and Observability | Not Started |
+| 11  | UI Foundation               | Not Started |
+| 12  | Sync Service Projections    | Not Started |
+| 13  | UI Features: Core           | Not Started |
+| 14  | Token Vault Integration     | Not Started |
+| 15  | UI Features: Security       | Not Started |
+| 16  | Agent Service Runtime       | Not Started |
+| 17  | Production Infrastructure   | Not Started |
+| 18  | Hardening and Observability | Not Started |
 
 ---
 
@@ -473,35 +476,53 @@ Wire real Auth0 login/logout flows end-to-end. Bind `actbound-post-login-enrich`
 
 **Depends on:** Phase 4 (Auth0 tenant provisioned), DNS for `auth.actbound.ai`.
 
-### Phase 8 — Sync Service Projections (Not Started)
+### Phase 8 — UI Foundation (Not Started)
+
+Scaffold Aurora template into `apps/web`. Replace route map with product domains. Replace nav labels and page titles. Configure MUI theme with Sentinel design tokens (Manrope + Inter fonts, MD3 color palette, tonal layering, no-shadow elevation). Define gateway API client structure (`services/api/gateway/`). Set TanStack Query conventions (key naming, mutation invalidation, rendering states). Set Zustand limits (client UI state only). Build shared product primitives (`AppShell`, `PageHeader`, `SectionCard`, `MetricCard`, `EntityTable`, `StatusBadge`, `EmptyState`, `LoadingState`, `ErrorState`, `ConfirmDialog`, `DetailDrawer`, `TrustGauge`, `ActivityItem`, `PolicyBadge`). Scaffold empty routes/pages for all 9 feature domains. Wire Auth0 provider with `auth.actbound.ai`.
+
+**Depends on:** Phase 7 (Auth0 login wired, real tokens available). See `docs/ai/context-ui.md` for full conventions.
+
+### Phase 9 — Sync Service Projections (Not Started)
 
 Replace the 6 TODO projection handlers in sync-processor with real implementations. `org.membership.changed` → write OpenFGA tuples + upsert app DB org membership. `user.projected` → upsert user in app DB. `invitation.accepted` → create OpenFGA tuple + update invitation record. `access.revoked` → delete OpenFGA tuple + create revocation record. `assistant.delegation.changed` → update OpenFGA delegation tuples. `reconciliation.requested` → compare expected state vs active tuples, emit drift report. Promote sync queue from in-memory to Redis (BullMQ). Connect existing `TupleSyncService` in `packages/openfga` to the sync processor pipeline.
 
 **Depends on:** Phase 7 (real identity tokens needed for sync events).
 
-### Phase 9 — Token Vault Integration (Not Started)
+### Phase 10 — UI Features: Core (Not Started)
+
+Implement core product screens from Stitch designs. Dashboard: main dashboard with `MetricCard` grid, `TrustGauge`, activity timeline, wired to gateway queries. Assistants: directory (list, search, filter), control panel (detail, delegation, kill-switch). Organizations: directory and detail views. Resources: directory, protected resources, resource detail. Policies: policy list, policy editor, policy simulation trace. All backed by TanStack Query with gateway API adapters and mock-first development strategy.
+
+**Depends on:** Phase 8 (UI foundation, shared primitives, routes scaffolded). See `docs/ai/context-ui.md` Sections 10-12.
+
+### Phase 11 — Token Vault Integration (Not Started)
 
 Replace Token Vault stubs in `delegated-access.service.ts` with real Auth0 Token Vault API calls. Implement delegated OAuth flow (initiate → callback → persist). Wire consent grant/revoke through Auth0 APIs. Implement vault session lifecycle (create, expire, revoke). Add real provider connections (Google, Slack as initial targets). Replace placeholder connection IDs (`conn_demo_vault`, `conn_demo_salesforce`) with live provider configurations.
 
 **Depends on:** Phase 7 (authenticated users), Auth0 Token Vault feature enabled on tenant.
 
-### Phase 10 — Agent Service Runtime (Not Started)
+### Phase 12 — UI Features: Security and Audit (Not Started)
+
+Implement security and observability screens from Stitch designs. Security: security posture dashboard, authorization logic graph, connected accounts and delegation management, user security controls. Audit: audit log with timeline view, activity filtering. Settings: platform configuration. Wire to real backend data from sync projections and Token Vault integration.
+
+**Depends on:** Phase 9 (sync projections live), Phase 11 (Token Vault live), Phase 10 (core UI complete). See `docs/ai/context-ui.md` Sections 10-12.
+
+### Phase 13 — Agent Service Runtime (Not Started)
 
 Build out `services/agent-service` with real business logic. Implement assistant invocation lifecycle (request → authorize → execute → audit). Wire full delegation intersection enforcement: OpenFGA executor check + delegator check + user authorization check. Implement tool execution with scoped secret retrieval via Token Vault. Implement kill-switch (disable Auth0 M2M app + purge OpenFGA tuples + revoke active sessions). Connect assistant runtime to sync service for state change events.
 
-**Depends on:** Phase 8 (OpenFGA projections), Phase 9 (Token Vault for secret retrieval).
+**Depends on:** Phase 9 (OpenFGA projections), Phase 11 (Token Vault for secret retrieval).
 
-### Phase 11 — Production Infrastructure (Not Started)
+### Phase 14 — Production Infrastructure (Not Started)
 
 Deploy to AWS with proper isolation. Terraform modules for VPC (public/private subnets), ECS/Fargate task definitions, RDS PostgreSQL, ElastiCache Redis. Environment isolation: separate Auth0 tenants, AWS accounts, and data stores per environment (dev/staging/prod). CloudWatch log shipping with structured JSON parsing. Secrets Manager rotation Lambda for automated credential cycling. Custom domain routing: `api.actbound.ai` → orchestrator-api, `auth.actbound.ai` → Auth0 tenant.
 
 **Depends on:** Phase 7 (Auth0 custom domain), AWS account setup.
 
-### Phase 12 — Hardening and Observability (Not Started)
+### Phase 15 — Hardening and Observability (Not Started)
 
 Production-grade operational readiness. Per-principal rate limiting on orchestrator-api. Step-up authentication for high-risk operations (secret access, delegation changes, kill-switch). Real CloudTrail integration for infrastructure audit trail. Prometheus/Grafana metrics to replace in-memory observability counters. Recovery drill automation (scripted restore + validation). Expand test coverage to 70%+ across services and packages.
 
-**Depends on:** Phase 11 (production infrastructure deployed).
+**Depends on:** Phase 14 (production infrastructure deployed).
 
 ---
 

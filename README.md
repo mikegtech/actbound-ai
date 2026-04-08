@@ -128,8 +128,11 @@ Key decisions:
 | Auditability and User Control          | Complete    |
 | Documentation and Release Readiness    | Complete    |
 | Auth0 Universal Login Integration      | Not Started |
+| UI Foundation                          | Not Started |
 | Sync Service Projections               | Not Started |
+| UI Features: Core                      | Not Started |
 | Token Vault Integration                | Not Started |
+| UI Features: Security and Audit        | Not Started |
 | Agent Service Runtime                  | Not Started |
 | Production Infrastructure              | Not Started |
 | Hardening and Observability            | Not Started |
