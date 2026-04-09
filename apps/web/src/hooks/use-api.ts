@@ -5,19 +5,13 @@ import { useConfig } from "../providers/config";
 
 /**
  * Returns an OrchestratorApiClient instance.
- * In Auth0 mode the access token is attached lazily before each request
- * by wrapping the base class constructor with an Authorization header.
- * In demo mode the client works without a token (orchestrator uses demo headers).
+ * Access token is attached lazily before each request via the Authorization header.
  */
 export function useApi(): OrchestratorApiClient {
   const config = useConfig();
 
   return useMemo(
-    () =>
-      new OrchestratorApiClient(config.orchestratorApiUrl, {
-        // Auth0 mode: the token is attached lazily if the caller sets it.
-        // For demo mode this is a no-op (empty headers).
-      }),
+    () => new OrchestratorApiClient(config.orchestratorApiUrl),
     [config.orchestratorApiUrl],
   );
 }
@@ -27,16 +21,13 @@ export function useApi(): OrchestratorApiClient {
  * Prefer useApi() for hooks; use this for event handlers that need a fresh token.
  */
 export function useApiCall() {
-  const { getAccessToken, mode } = useAuth();
+  const { getAccessToken } = useAuth();
   const config = useConfig();
 
   return async function createAuthedClient(): Promise<OrchestratorApiClient> {
-    if (mode === "auth0") {
-      const token = await getAccessToken();
-      return new OrchestratorApiClient(config.orchestratorApiUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-    }
-    return new OrchestratorApiClient(config.orchestratorApiUrl);
+    const token = await getAccessToken();
+    return new OrchestratorApiClient(config.orchestratorApiUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
   };
 }

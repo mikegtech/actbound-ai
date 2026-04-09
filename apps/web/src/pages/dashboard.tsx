@@ -21,7 +21,7 @@ type NavSection =
   | "broker";
 
 export function DashboardPage() {
-  const { user, logout, mode } = useAuth();
+  const { user, logout } = useAuth();
   const config = useConfig();
   const [section, setSection] = useState<NavSection>("dashboard");
   const [connections, setConnections] = useState<ProviderConnection[]>([]);
@@ -130,9 +130,7 @@ export function DashboardPage() {
           <div />
           <div className="dash-topbar__user">
             <span>{user?.name ?? user?.email ?? "Operator"}</span>
-            <StatusPill tone="success">
-              {mode === "auth0" ? "Auth0" : "Demo"}
-            </StatusPill>
+            <StatusPill tone="success">Authenticated</StatusPill>
           </div>
         </header>
 

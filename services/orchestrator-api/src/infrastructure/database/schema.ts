@@ -18,6 +18,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -144,6 +145,9 @@ export const resources = pgTable("resources", {
 export const users = pgTable("users", {
   sub: text("sub").primaryKey(),
   tenantId: text("tenant_id").notNull().default("default"),
+  internalId: uuid("internal_id").defaultRandom(),
+  issuer: text("issuer"),
+  issuerType: text("issuer_type"),
   displayName: text("display_name"),
   email: text("email"),
   status: text("status").notNull().default("active"),
@@ -154,6 +158,68 @@ export const users = pgTable("users", {
     .notNull()
     .defaultNow(),
 });
+
+// ── Trusted Issuers Registry ──────────────────────────────
+
+export const trustedIssuers = pgTable(
+  "trusted_issuers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: text("tenant_id").notNull().default("default"),
+    issuerType: text("issuer_type").notNull(),
+    issuerUrl: text("issuer_url").notNull(),
+    displayName: text("display_name").notNull(),
+    audience: text("audience"),
+    jwksUrl: text("jwks_url"),
+    discoveryUrl: text("discovery_url"),
+    claimMappingProfile: text("claim_mapping_profile")
+      .notNull()
+      .default("default"),
+    enabled: boolean("enabled").notNull().default(true),
+    metadata: jsonb("metadata").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("uq_ti_tenant_issuer").on(table.tenantId, table.issuerUrl),
+    index("idx_ti_tenant").on(table.tenantId),
+    index("idx_ti_issuer_url").on(table.issuerUrl),
+    index("idx_ti_enabled").on(table.tenantId, table.enabled),
+  ],
+);
+
+// ── Identity Bindings ─────────────────────────────────────
+
+export const identityBindings = pgTable(
+  "identity_bindings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    issuer: text("issuer").notNull(),
+    externalSub: text("external_sub").notNull(),
+    internalSubjectId: uuid("internal_subject_id").notNull().defaultRandom(),
+    issuerType: text("issuer_type").notNull(),
+    tenantId: text("tenant_id").notNull().default("default"),
+    displayName: text("display_name"),
+    email: text("email"),
+    status: text("status").notNull().default("active"),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("uq_ib_issuer_sub").on(table.issuer, table.externalSub),
+    index("idx_ib_internal").on(table.internalSubjectId),
+    index("idx_ib_tenant").on(table.tenantId),
+  ],
+);
 
 // ── Invitations ───────────────────────────────────────────
 
@@ -224,3 +290,7 @@ export type UserRow = typeof users.$inferSelect;
 export type InvitationRow = typeof invitations.$inferSelect;
 export type RevocationRow = typeof revocations.$inferSelect;
 export type OwnershipChangeRow = typeof ownershipChanges.$inferSelect;
+export type TrustedIssuerRow = typeof trustedIssuers.$inferSelect;
+export type TrustedIssuerInsert = typeof trustedIssuers.$inferInsert;
+export type IdentityBindingRow = typeof identityBindings.$inferSelect;
+export type IdentityBindingInsert = typeof identityBindings.$inferInsert;

@@ -14,7 +14,7 @@ import {
   executeAuditedOperation,
   createExecutionContext,
 } from "@actbound/sdk";
-import type { Principal } from "../../domain/identity/principal";
+import type { NormalizedPrincipal } from "../../domain/identity/normalized-principal";
 
 export interface DelegatedActionRequest {
   actionId: string;
@@ -43,7 +43,7 @@ export class DelegatedActionService {
    * This is the bridge between NestJS request and the framework-agnostic pattern.
    */
   buildContext(
-    principal: Principal | undefined,
+    principal: NormalizedPrincipal | undefined,
     requestId?: string,
   ): ExecutionContext {
     return createExecutionContext({
@@ -51,7 +51,7 @@ export class DelegatedActionService {
       tenantId: principal?.tenantId ?? "default",
       principal: principal
         ? {
-            sub: principal.sub,
+            sub: principal.internalSubjectId,
             principalType: principal.principalType,
             displayName: principal.clientId,
           }

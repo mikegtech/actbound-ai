@@ -4,13 +4,7 @@ import {
   useAuth0,
   type Auth0ContextInterface,
 } from "@auth0/auth0-react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, type ReactNode } from "react";
 import { useConfig } from "./config";
 
 export interface AuthState {
@@ -20,7 +14,6 @@ export interface AuthState {
   getAccessToken: () => Promise<string | null>;
   login: () => void;
   logout: () => void;
-  mode: "auth0" | "demo";
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -58,25 +51,6 @@ function Auth0AuthBridge({ children }: { children: ReactNode }) {
     getAccessToken,
     login: handleLogin,
     logout: handleLogout,
-    mode: "auth0",
-  };
-
-  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
-}
-
-function DemoAuth({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  const state: AuthState = {
-    isAuthenticated,
-    isLoading: false,
-    user: isAuthenticated
-      ? { email: "alice@actbound.dev", name: "Alice Demo", sub: "demo-user" }
-      : null,
-    getAccessToken: async () => null,
-    login: () => setIsAuthenticated(true),
-    logout: () => setIsAuthenticated(false),
-    mode: "demo",
   };
 
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
@@ -85,22 +59,24 @@ function DemoAuth({ children }: { children: ReactNode }) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const config = useConfig();
 
-  if (config.isAuth0Configured) {
-    return (
-      <Auth0Provider
-        domain={config.auth0Domain}
-        clientId={config.auth0ClientId}
-        authorizationParams={{
-          redirect_uri: config.auth0CallbackUrl,
-          audience: config.auth0Audience,
-        }}
-      >
-        <Auth0AuthBridge>{children}</Auth0AuthBridge>
-      </Auth0Provider>
+  if (!config.isAuth0Configured) {
+    throw new Error(
+      "Auth0 is not configured. Set VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID environment variables.",
     );
   }
 
-  return <DemoAuth>{children}</DemoAuth>;
+  return (
+    <Auth0Provider
+      domain={config.auth0Domain}
+      clientId={config.auth0ClientId}
+      authorizationParams={{
+        redirect_uri: config.auth0CallbackUrl,
+        audience: config.auth0Audience,
+      }}
+    >
+      <Auth0AuthBridge>{children}</Auth0AuthBridge>
+    </Auth0Provider>
+  );
 }
 
 export function useAuth(): AuthState {

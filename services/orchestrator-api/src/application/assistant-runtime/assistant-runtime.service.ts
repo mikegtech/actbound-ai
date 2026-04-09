@@ -19,7 +19,7 @@ import {
   createExecutionContext,
 } from "@actbound/sdk";
 import type { RelationshipWriter } from "@actbound/openfga";
-import type { Principal } from "../../domain/identity/principal";
+import type { NormalizedPrincipal } from "../../domain/identity/normalized-principal";
 import type { AssistantRepository } from "../../domain/assistants/assistant.repository";
 import type { ObservabilityService } from "../observability/observability.service";
 
@@ -124,7 +124,7 @@ export class AssistantRuntimeService {
   ) {}
 
   buildContext(
-    principal: Principal | undefined,
+    principal: NormalizedPrincipal | undefined,
     requestId?: string,
     workflowId?: string,
   ): ExecutionContext {
@@ -134,7 +134,7 @@ export class AssistantRuntimeService {
       tenantId: principal?.tenantId ?? "default",
       principal: principal
         ? {
-            sub: principal.sub,
+            sub: principal.internalSubjectId,
             principalType: principal.principalType,
             displayName: principal.clientId,
           }

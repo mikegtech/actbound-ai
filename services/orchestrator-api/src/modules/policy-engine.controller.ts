@@ -52,7 +52,7 @@ export class PolicyEngineController {
     void this.auditService.record({
       eventType: "policy.created",
       actor: {
-        sub: principal?.sub ?? "system",
+        sub: principal?.internalSubjectId ?? "system",
         principalType: principal?.principalType ?? "service",
       },
       resource: { type: "policy", id: policy.id },
@@ -82,7 +82,7 @@ export class PolicyEngineController {
     void this.auditService.record({
       eventType,
       actor: {
-        sub: principal?.sub ?? "system",
+        sub: principal?.internalSubjectId ?? "system",
         principalType: principal?.principalType ?? "service",
       },
       resource: { type: "policy", id },
@@ -105,7 +105,7 @@ export class PolicyEngineController {
       void this.auditService.record({
         eventType: "policy.deleted",
         actor: {
-          sub: principal?.sub ?? "system",
+          sub: principal?.internalSubjectId ?? "system",
           principalType: principal?.principalType ?? "service",
         },
         resource: { type: "policy", id },

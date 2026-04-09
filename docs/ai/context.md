@@ -176,6 +176,12 @@ actbound-ai/
 | 045 | [Guardrail Enforcement Policy](../decisions/ADR-045-guardrail-enforcement-policy.md) |
 | 046 | [Documentation and ADR Standard](../decisions/ADR-046-documentation-adr-standard.md) |
 
+### Identity (047)
+
+| ADR | Title                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------ |
+| 047 | [Multi-Issuer Identity Architecture](../decisions/ADR-047-multi-issuer-identity-architecture.md) |
+
 ---
 
 ## 6. Epic Status Tracker
@@ -191,7 +197,7 @@ actbound-ai/
 | 7   | Security Observability      | Complete    |
 | 8   | Security Resilience         | Complete    |
 | 9   | Security Enablement         | Complete    |
-| 10  | Auth0 Login + Multi-Issuer  | Not Started |
+| 10  | Auth0 Login + Multi-Issuer  | Complete    |
 | 11  | UI Foundation               | Not Started |
 | 12  | Sync Service Projections    | Not Started |
 | 13  | UI Features: Core           | Not Started |
@@ -488,13 +494,11 @@ Shared audit models (AuditEvent, ActivityTimeline, UserControlSummary), orchestr
 
 README polish, architecture documentation, demo flow documentation.
 
-### Phase 7 — Auth0 Universal Login and Multi-Issuer Foundation (Not Started)
+### Phase 7 — Auth0 Universal Login and Multi-Issuer Foundation (Complete)
 
-Wire real Auth0 login/logout flows end-to-end as the first trusted issuer. Bind `actbound-post-login-enrich` and `actbound-m2m-enrich` actions to Auth0 login and M2M credential exchange flows. Configure custom domain `auth.actbound.ai` on Auth0 tenant. Create demo users with assigned roles and org memberships. Remove demo principal fallback from JWT middleware (fail-closed). Wire `apps/web` Auth0Provider with real redirect callbacks and PKCE flow. Verify custom claims (`https://actbound.ai/` namespace) arrive correctly in access tokens. Update resource server audience to `https://api.actbound.ai`.
+Real Auth0 PKCE login wired end-to-end. Demo principal fallback removed — fail-closed on all auth paths (no token, invalid token, untrusted issuer all return 401). Multi-issuer OIDC architecture implemented: trusted issuer registry (per-tenant, DB-backed), claim normalization pipeline (Auth0ClaimNormalizer as first implementation, profile-driven claim extraction), internal identity binding (`issuer|sub` → `internal_subject_id` via `identity_bindings` table). Auth0 is the first registered provider. Architecture is generic OIDC — Keycloak slots in by adding a normalizer + registry entry (Phase 13). NormalizedPrincipal replaces Principal throughout authorization, audit, and OpenFGA paths. All authorization is provider-agnostic: uses `internalSubjectId`, never raw external claims. Web app demo mode removed; Auth0 is required. 209 tests passing (16 new identity tests). Migration 0005 adds `trusted_issuers`, `identity_bindings` tables and extends `users` with `internal_id`, `issuer`, `issuer_type` columns.
 
-Establish multi-issuer architecture: implement trusted issuer registry (per-tenant issuer configuration), claim normalization pipeline (issuer-specific mapping profiles), and internal identity binding (`issuer|sub` → `internal_subject_id`). Auth0 is the first provider registered. Architecture must be generic OIDC so additional providers slot in without structural changes.
-
-**Depends on:** Phase 4 (Auth0 tenant provisioned), DNS for `auth.actbound.ai`.
+**Remaining manual Auth0 steps:** Bind actions to flows, configure `auth.actbound.ai` custom domain DNS, create demo users, migrate audience from `api.actbound.dev` to `api.actbound.ai`.
 
 ### Phase 8 — UI Foundation (Not Started)
 
@@ -618,18 +622,25 @@ These apply to every AI agent and tool operating in this repo.
 
 ---
 
-## 20. Auth0 Tenant
+## 20. Auth0 Tenants
+
+### Production Tenant (primary)
+
+- Tenant: `actbound-prod.us.auth0.com`
+- Custom domain: `auth.actbound.ai` (verified, Auth0-managed certificate)
+- MCP access: configured in `.mcp.json` via `@auth0/auth0-mcp-server`
+- `actbound-web` (SPA): client ID `eX0WCmvvBuTLIetTRqyTL0Nrkd1mozgV`
+- `actbound-api` (resource server): audience `https://api.actbound.ai`, 14 scopes, RS256
+- `actbound-m2m` (M2M): client ID `qaht9a6n66vvpz96jJhI72QP4gztQMx2`, granted all 14 scopes
+- Actions: `actbound-post-login-enrich` and `actbound-m2m-enrich` deployed and bound to flows
+- Token broker pattern is the required M2M issuance path (see `docs/auth0-setup.md`)
+- Users sign up via Auth0 Universal Login — no pre-provisioning needed
+
+### Dev Tenant (legacy, shared)
 
 - Tenant: `dev-6az71xw7wqwtmp0q.us.auth0.com`
-- Custom domain: `auth.actbound.ai` (to be configured in Phase 7)
-- MCP access: configured in `.mcp.json` via `@auth0/auth0-mcp-server`
-- **Auth0 dev setup is documented and provisioned** — see `docs/auth0-setup.md`
-- `actbound-web` (SPA): client ID `VKm1ClfzHqI0VSKtjtzAtBDbgeBXAVLp`
-- `actbound-api` (resource server): audience `https://api.actbound.ai`, 14 scopes (migrating from `https://api.actbound.dev`)
-- `actbound-m2m` (M2M): client ID `ljGntsIp3TqZrXxvvdjNzH9MONSX68OQ`, granted all 14 scopes
-- Actions: `actbound-post-login-enrich` and `actbound-m2m-enrich` deployed (need manual flow binding)
-- Token broker pattern is the required M2M issuance path (see `docs/auth0-setup.md` section "Token Broker Pattern")
-- Remaining: configure custom domain DNS, bind actions to flows, create demo users, migrate audience URL
+- Audience: `https://api.actbound.dev` (immutable, cannot migrate)
+- Retained for reference only — production work uses `actbound-prod`
 
 ---
 

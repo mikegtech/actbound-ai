@@ -58,7 +58,7 @@ export class AssistantRuntimeController {
     @Req() req: RequestWithAuthContext,
   ) {
     const ctx = this.runtime.buildContext(req.principal);
-    const disabledBy = req.principal?.sub ?? "system";
+    const disabledBy = req.principal?.internalSubjectId ?? "system";
     return this.runtime.disableAssistant(assistantId, disabledBy, ctx);
   }
 }

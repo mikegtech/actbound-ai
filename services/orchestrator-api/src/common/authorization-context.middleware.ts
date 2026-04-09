@@ -145,29 +145,24 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
     _response: Response,
     next: NextFunction,
   ) {
-    // Use real principal from JWT when available (set by JwtAuthMiddleware)
+    // Principal is always set by JwtAuthMiddleware (fail-closed — no demo fallback).
     const principal = request.principal;
-    const isRealPrincipal = principal?.authenticated === true;
+    if (!principal) {
+      throw new Error(
+        "No principal on request — JwtAuthMiddleware must run first",
+      );
+    }
 
-    // Actor identity: prefer JWT principal over demo headers
-    const actorId = isRealPrincipal
-      ? principal!.sub
-      : (request.header("x-user-id") ?? "demo-user");
-    const actorType = isRealPrincipal
-      ? parseActorType(
-          principal!.principalType === "service"
-            ? "system"
-            : principal!.principalType,
-          undefined,
-        )
-      : parseActorType("user", request.header("x-actor-type"));
-    const actorRoles = isRealPrincipal
-      ? parseRoles(["viewer"], principal!.roles.join(","))
-      : parseRoles(["operator"], request.header("x-user-roles"));
-
-    const subjectId = isRealPrincipal
-      ? principal!.sub
-      : (request.header("x-subject-id") ?? "subject-demo");
+    // Actor identity: use internal subject ID from identity binding (provider-agnostic).
+    const actorId = principal.internalSubjectId;
+    const actorType = parseActorType(
+      principal.principalType === "service"
+        ? "system"
+        : principal.principalType,
+      undefined,
+    );
+    const actorRoles = parseRoles(["viewer"], principal.roles.join(","));
+    const subjectId = principal.internalSubjectId;
     const consentStatus = parseConsentStatus(
       "granted",
       request.header("x-consent-status"),
@@ -212,9 +207,7 @@ export class AuthorizationContextMiddleware implements NestMiddleware {
       request.header("x-vault-session-scopes"),
     );
 
-    const tenantId = isRealPrincipal
-      ? principal!.tenantId
-      : (request.header("x-tenant-id") ?? "demo-tenant");
+    const tenantId = principal.tenantId;
 
     request.authContext = createAuthorizationContext({
       actor: {

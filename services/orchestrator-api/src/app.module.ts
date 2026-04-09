@@ -24,6 +24,11 @@ import { PostgresOwnershipChangeRepository } from "./infrastructure/database/own
 import { PostgresResourceRepository } from "./infrastructure/database/resource.repository.impl";
 import { PostgresRevocationRepository } from "./infrastructure/database/revocation.repository.impl";
 import { PostgresUserRepository } from "./infrastructure/database/user.repository.impl";
+import { PostgresIdentityBindingRepository } from "./infrastructure/database/identity-binding.repository.impl";
+import { PostgresTrustedIssuerRepository } from "./infrastructure/database/trusted-issuer.repository.impl";
+import { ClaimNormalizationService } from "./application/identity/claim-normalization.service";
+import { IdentityBindingService } from "./application/identity/identity-binding.service";
+import { IssuerSeedService } from "./infrastructure/identity/issuer-seed";
 import { AgentActionsController } from "./modules/agent-actions.controller";
 import { AuthzController } from "./modules/authz.controller";
 import { AuditEventsController } from "./modules/audit-events.controller";
@@ -97,6 +102,17 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
       useClass: PostgresRevocationRepository,
     },
     { provide: "USER_REPOSITORY", useClass: PostgresUserRepository },
+    {
+      provide: "IDENTITY_BINDING_REPOSITORY",
+      useClass: PostgresIdentityBindingRepository,
+    },
+    {
+      provide: "TRUSTED_ISSUER_REPOSITORY",
+      useClass: PostgresTrustedIssuerRepository,
+    },
+    ClaimNormalizationService,
+    IdentityBindingService,
+    IssuerSeedService,
     // OpenFGA RelationshipWriter
     {
       provide: "RELATIONSHIP_WRITER",

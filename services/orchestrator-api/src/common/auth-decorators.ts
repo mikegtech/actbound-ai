@@ -12,17 +12,17 @@ import {
   type CanActivate,
   Injectable,
 } from "@nestjs/common";
-import type { Principal } from "../domain/identity/principal";
+import type { NormalizedPrincipal } from "../domain/identity/normalized-principal";
 
 /**
- * Parameter decorator — extracts the Principal from the request.
+ * Parameter decorator — extracts the NormalizedPrincipal from the request.
  *
  * Usage:
  *   @Get("me")
- *   getMe(@CurrentPrincipal() principal: Principal) { ... }
+ *   getMe(@CurrentPrincipal() principal: NormalizedPrincipal) { ... }
  */
 export const CurrentPrincipal = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): Principal | undefined => {
+  (_data: unknown, ctx: ExecutionContext): NormalizedPrincipal | undefined => {
     const request = ctx.switchToHttp().getRequest();
     return request.principal;
   },
@@ -40,7 +40,7 @@ export const CurrentPrincipal = createParamDecorator(
 export class AuthenticatedGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const request = ctx.switchToHttp().getRequest();
-    const principal: Principal | undefined = request.principal;
+    const principal: NormalizedPrincipal | undefined = request.principal;
 
     if (!principal || !principal.authenticated) {
       throw new UnauthorizedException("Authentication required");

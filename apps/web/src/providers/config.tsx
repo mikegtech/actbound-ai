@@ -16,7 +16,7 @@ function resolveConfig(): AppConfig {
   const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN ?? "";
   const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID ?? "";
   const auth0Audience =
-    import.meta.env.VITE_AUTH0_AUDIENCE ?? "https://api.actbound.dev";
+    import.meta.env.VITE_AUTH0_AUDIENCE ?? "https://api.actbound.ai";
   const auth0CallbackUrl =
     import.meta.env.VITE_AUTH0_CALLBACK_URL ??
     `${window.location.origin}/callback`;

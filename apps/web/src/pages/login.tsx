@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useAuth } from "../providers/auth";
 
 export function LoginPage() {
-  const { login, mode } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
 
   function handleSubmit(e: FormEvent) {
@@ -40,9 +40,7 @@ export function LoginPage() {
               <span className="login-field__icon">@</span>
               <input
                 type="email"
-                placeholder={
-                  mode === "auth0" ? "name@company.ai" : "alice@actbound.dev"
-                }
+                placeholder="name@company.ai"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="login-field__input"
@@ -74,28 +72,10 @@ export function LoginPage() {
           </div>
 
           <div className="login-card__social">
-            <button
-              type="button"
-              className="login-social-btn"
-              disabled={mode !== "auth0"}
-              title={
-                mode !== "auth0"
-                  ? "Configure Auth0 environment variables to enable"
-                  : undefined
-              }
-            >
+            <button type="button" className="login-social-btn">
               <span className="login-social-btn__icon">G</span> Google
             </button>
-            <button
-              type="button"
-              className="login-social-btn"
-              disabled={mode !== "auth0"}
-              title={
-                mode !== "auth0"
-                  ? "Configure Auth0 environment variables to enable"
-                  : undefined
-              }
-            >
+            <button type="button" className="login-social-btn">
               {"<>"} GitHub
             </button>
           </div>
@@ -103,12 +83,6 @@ export function LoginPage() {
           <p className="login-card__notice">
             Unauthorized access is strictly monitored.
           </p>
-
-          {mode === "demo" && (
-            <p className="login-card__demo-badge">
-              Demo mode — Auth0 not configured
-            </p>
-          )}
         </form>
       </main>
 
