@@ -59,6 +59,9 @@ services:
       OPENFGA_API_URL: http://openfga:8080
       # Note: internal service-to-service uses container port 8080, not the host-mapped 8180
       ORCHESTRATOR_CORS_ORIGINS: http://localhost:5173,http://localhost
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      AUTH0_RAW_TENANT: ${AUTH0_RAW_TENANT:-}
     depends_on:
       - redis
       - openfga
@@ -86,7 +89,10 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        VITE_ORCHESTRATOR_API_URL: http://localhost:3001
+        VITE_ORCHESTRATOR_API_URL: ${VITE_ORCHESTRATOR_API_URL:-http://localhost:3001}
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-https://api.actbound.ai}
     container_name: actbound-web
     ports:
       - "5173:80"

@@ -152,8 +152,11 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // JWT auth runs first, extracts principal. AuthZ context runs second, uses principal.
+    // Health and docs endpoints are excluded — they must remain unauthenticated
+    // for Docker health checks, load balancers, and OpenAPI clients.
     consumer
       .apply(JwtAuthMiddleware, AuthorizationContextMiddleware)
+      .exclude("health", "health/(.*)", "docs", "docs/(.*)")
       .forRoutes("*");
   }
 }
