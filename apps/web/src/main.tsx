@@ -1,60 +1,39 @@
-/* eslint-disable react-refresh/only-export-components */
+import "@fontsource/inter/300.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { RouterProvider } from "@tanstack/react-router";
+import BreakpointsProvider from "providers/BreakpointsProvider";
+import NotistackProvider from "providers/NotistackProvider";
+import QueryProvider from "providers/QueryProvider";
+import SettingsProvider from "providers/SettingsProvider";
+import ThemeProvider from "providers/ThemeProvider";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-
-import { ConfigProvider } from "./providers/config";
-import { AuthProvider, useAuth } from "./providers/auth";
-import { LoginPage } from "./pages/login";
-import { DashboardPage } from "./pages/dashboard";
-import "./index.css";
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) return <p className="dash-loading">Authenticating...</p>;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-}
-
-function AuthRedirect({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
-  if (isAuthenticated) return <Navigate to="/" replace />;
-  return <>{children}</>;
-}
-
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route
-        path="/login"
-        element={
-          <AuthRedirect>
-            <LoginPage />
-          </AuthRedirect>
-        }
-      />
-      <Route path="/callback" element={<Navigate to="/" replace />} />
-      <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
-  );
-}
+import router from "routes/router";
+import "./locales/i18n";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ConfigProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </ConfigProvider>
-    </BrowserRouter>
+    <QueryProvider>
+      <SettingsProvider>
+        <ThemeProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <NotistackProvider>
+              <BreakpointsProvider>
+                <RouterProvider router={router} />
+              </BreakpointsProvider>
+            </NotistackProvider>
+          </LocalizationProvider>
+        </ThemeProvider>
+      </SettingsProvider>
+    </QueryProvider>
   </React.StrictMode>,
 );

@@ -4,7 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
-export function createActboundEslintConfig({ webFiles = [] } = {}) {
+export function createActboundEslintConfig({ webFiles = [], rules = {} } = {}) {
   return tseslint.config(
     {
       ignores: ["**/dist/**", "**/node_modules/**", "docs/openapi/**"],
@@ -53,6 +53,7 @@ export function createActboundEslintConfig({ webFiles = [] } = {}) {
             allowConstantExport: true,
           },
         ],
+        ...rules,
       },
     },
   );

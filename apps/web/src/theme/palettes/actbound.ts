@@ -1,0 +1,90 @@
+import type { PaletteOptions } from "@mui/material/styles";
+
+const actboundBasePalette = {
+  primary: {
+    main: "#003d9b",
+    lighter: "#e2e7ff",
+    light: "#668adb",
+    dark: "#002966",
+    darker: "#001433",
+    contrastText: "#ffffff",
+  },
+  secondary: {
+    main: "#131b2e",
+    lighter: "#f2f3ff",
+    light: "#8a8d99",
+    dark: "#0c121e",
+    darker: "#06090f",
+    contrastText: "#faf8ff",
+  },
+  error: {
+    main: "#ba1a1a",
+    lighter: "#ffdad6",
+    light: "#ff897d",
+    dark: "#93000a",
+    darker: "#410002",
+    contrastText: "#ffffff",
+  },
+  warning: {
+    main: "#7b2600",
+    lighter: "#ffdbcc",
+    light: "#cc4d1f",
+    dark: "#581900",
+    darker: "#2d0a00",
+    contrastText: "#ffffff",
+  },
+  info: {
+    main: "#0062a1",
+    lighter: "#d1e4ff",
+    light: "#6bb0ff",
+    dark: "#004a7a",
+    darker: "#001d36",
+    contrastText: "#ffffff",
+  },
+  success: {
+    main: "#006e1c",
+    lighter: "#94f990",
+    light: "#52c653",
+    dark: "#005313",
+    darker: "#002204",
+    contrastText: "#ffffff",
+  },
+  neutral: {
+    main: "#5e5e62",
+    lighter: "#e3e2e6",
+    light: "#909094",
+    dark: "#46464f",
+    darker: "#1b1b1f",
+    contrastText: "#ffffff",
+  },
+};
+
+export const actboundPalette: PaletteOptions = {
+  ...actboundBasePalette,
+  divider: "#c3c6d6",
+  dividerLight: "#c3c6d6",
+  background: {
+    default: "#faf8ff",
+    paper: "#ffffff",
+    elevation1: "#f2f3ff",
+    elevation2: "#e2e7ff",
+    elevation3: "#e2e7ff",
+    elevation4: "#e2e7ff",
+    menu: "#ffffff",
+    menuElevation1: "#f2f3ff",
+    menuElevation2: "#e2e7ff",
+  },
+  text: {
+    primary: "#131b2e",
+    secondary: "#8a8d99",
+    disabled: "#131b2e66",
+  },
+  action: {
+    active: "#131b2e",
+    hover: "rgba(19, 27, 46, 0.04)",
+    selected: "rgba(19, 27, 46, 0.08)",
+    disabled: "rgba(19, 27, 46, 0.26)",
+    disabledBackground: "rgba(19, 27, 46, 0.12)",
+    focus: "rgba(19, 27, 46, 0.12)",
+  },
+};

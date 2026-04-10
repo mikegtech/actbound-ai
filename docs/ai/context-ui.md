@@ -1,705 +1,510 @@
-# ActBound AI — Frontend Architecture — UI Context
+# ActBound UI Context
 
-This document governs all frontend implementation in `apps/web`. It is the single source of truth for UI architecture, conventions, and design system integration. All AI agents and human engineers must read this before any frontend work.
+## Purpose
 
----
+This document is the working frontend context for `apps/web` in `actbound-ai`.
 
-## 1. Stack
+The UI is the control plane for ActBound AI: a governed, auditable system where AI assistants act within explicit authorization boundaries using a decoupled SPA architecture and a standalone API gateway.
 
-| Concern       | Technology                | Version   |
-| ------------- | ------------------------- | --------- |
-| Framework     | React + TypeScript strict | 19.2.x    |
-| Build         | Vite                      | 8.x       |
-| Router        | TanStack Router           | 1.168.x   |
-| Server State  | TanStack Query            | 5.96.x    |
-| Client State  | Zustand                   | 5.x       |
-| UI Components | MUI (Material UI)         | 7.x       |
-| Data Grid     | MUI X Data Grid           | 8.x       |
-| Forms         | React Hook Form + Zod     | 7.x / 4.x |
-| HTTP          | Axios                     | 1.x       |
-| Auth          | @auth0/auth0-react        | 2.x       |
-| Icons         | Iconify                   | 6.x       |
-| Notifications | notistack                 | 3.x       |
-| Dates         | dayjs                     | 1.x       |
-| Animations    | GSAP + Lottie             | 3.x       |
-| Code Quality  | Biome (lint + format)     | 2.x       |
-| i18n          | i18next                   | 25.x      |
-
-**Base template:** Aurora Typescript v1.12.0 (vite-ts-starter variant).
+This file is the source of truth for frontend implementation direction, completed UI phases, remaining work, agent rules, and the next recommended steps.
 
 ---
 
-## 2. Architectural Principles
+## Non-Negotiable Architecture
 
-### Decoupled SPA
+### Core rules
 
-The frontend is a standalone single-page application. It communicates exclusively with the orchestrator-api gateway. No direct calls to internal microservices.
+- The frontend is always a **decoupled SPA**.
+- The system always exposes a **standalone API gateway** as the public backend boundary.
+- The browser must never depend on internal service topology.
+- Frontend code must target **gateway-facing contracts** only.
+- The UI must remain independently deployable from backend services.
+- Frontend agents must not change backend behavior.
 
-### Backend is Authoritative
+### Frontend-only boundary
 
-The UI consumes permission decisions from API responses. It does not evaluate policies, check roles, or make authorization decisions. CASL is advisory UX only (ADR-020).
+Codex is being used for UI implementation.
 
-### Gateway Boundary
+Codex must:
 
-All API traffic routes through the orchestrator-api. This is enforced in code structure:
+- work in `apps/web`
+- optionally update frontend-oriented docs such as this file
+- consume `@actbound/ui` and `@actbound/sdk` where appropriate
+- avoid backend/API behavior changes
 
-```
-services/api/
-├── http.ts                      # Axios instance, interceptors, error normalization
-└── gateway/
-    ├── assistants.ts            # /assistants endpoints
-    ├── organizations.ts         # /organizations endpoints
-    ├── resources.ts             # /resources endpoints
-    ├── policies.ts              # /policies endpoints
-    ├── delegations.ts           # /delegations, /connections, /consents endpoints
-    ├── audit.ts                 # /audit-events, /me/activity endpoints
-    ├── security.ts              # /health, /me/control-summary endpoints
-    └── auth.ts                  # /auth endpoints
-```
+Codex must not:
 
-**Rules:**
+- modify backend services
+- modify gateway handlers
+- modify orchestrator logic
+- modify database code
+- modify auth server behavior
+- change API semantics
+- introduce backend assumptions not already established
 
-- No direct browser calls to internal microservices
-- No service-specific base URLs scattered through features
-- All frontend contracts represent public API gateway DTOs, not internal service shapes
-- Single `VITE_API_URL` environment variable points to the gateway
-
----
-
-## 3. Feature-Oriented Structure
-
-```
-src/
-├── assets/                      # Static files (images, animations)
-├── components/                  # Shared UI primitives (see Section 9)
-│   ├── base/                    # IconifyIcon, Image, NumberTextField
-│   ├── common/                  # Logo, PasswordTextField
-│   ├── guard/                   # AuthGuard, GuestGuard
-│   ├── loading/                 # PageLoader, Splash
-│   ├── styled/                  # Pre-styled MUI components
-│   └── product/                 # ActBound shared primitives (see Section 9)
-├── features/                    # Domain feature slices
-│   ├── dashboard/
-│   ├── assistants/
-│   ├── organizations/
-│   ├── resources/
-│   ├── policies/
-│   ├── delegations/
-│   ├── security/
-│   ├── audit/
-│   └── settings/
-├── hooks/                       # Global utility hooks
-├── layouts/                     # AppShell, AuthLayout, MainLayout
-├── lib/                         # Constants, utils, validators
-├── locales/                     # i18n translations
-├── providers/                   # React Context providers
-├── routes/                      # TanStack Router definitions
-├── services/                    # API clients (gateway boundary)
-├── stores/                      # Zustand stores (client state only)
-├── theme/                       # MUI theme (Sentinel design system)
-└── types/                       # Global TypeScript types
-```
-
-### Feature Slice Convention
-
-Each feature directory contains:
-
-```
-features/{feature}/
-├── components/                  # Feature-specific components
-├── hooks/                       # Feature-specific hooks (TanStack Query wrappers)
-├── api.ts                       # Feature API adapter (calls gateway client)
-├── schemas.ts                   # Feature Zod schemas (if not in SDK)
-├── routes.tsx                   # Feature route definitions
-└── index.ts                     # Public exports
-```
-
-**Rules:**
-
-- Features do not import from other features directly
-- Shared concerns go in `components/product/` or `hooks/`
-- Cross-feature communication happens through the router or query cache
+If a UI flow needs unavailable data, use typed frontend-only mocks/placeholders.
 
 ---
 
-## 4. TanStack Query Conventions
+## Template and Workspace Package Policy
 
-All server state flows through TanStack Query. No ad hoc `useEffect + axios` fetching.
+### Template policy
 
-### Query Key Convention
+- `apps/web` is the implementation base.
+- The trimmed React starter in `apps/web` is the active application shell.
+- The full `vite-ts` template in the repo is **read-only donor/reference material only**.
+- Do not copy whole demo pages from the reference template.
+- Adapt patterns into ActBound-specific primitives and screens.
 
-```typescript
-// Pattern: [domain, scope, ...params]
-["assistants", "list"][("assistants", "detail", assistantId)][
-  ("organizations", "list")
-][("organizations", "detail", orgId)][("policies", "list", { status })][
-  ("audit", "events", { page, filters })
-][("security", "control-summary")][("delegations", "connections")];
-```
+### Workspace package policy
 
-### Query Defaults
+The frontend depends on:
 
-```typescript
-{
-  staleTime: 5 * 60 * 1000,       // 5 minutes
-  retry: 2,
-  refetchOnWindowFocus: true,
-}
-```
+- `@actbound/sdk`
+- `@actbound/ui`
 
-### Mutation Patterns
+#### `@actbound/ui`
 
-```typescript
-// Every mutation must invalidate or update known query keys
-const useCreatePolicy = () =>
-  useMutation({
-    mutationFn: gateway.policies.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["policies"] });
-    },
-  });
-```
+Use as the first place to look for:
 
-### Rules
+- shared primitives
+- common layout patterns
+- reusable display components
+- theme-consistent presentation building blocks
 
-- All server state goes through feature hooks backed by TanStack Query
-- Mutations must invalidate or update known query keys
-- API errors are normalized in the Axios interceptor, not per-query
-- Use `enabled` option to prevent queries from firing without required params
-- Use `placeholderData: keepPreviousData` for pagination
-- No optimistic updates unless the feature explicitly requires it
+Keep components in `apps/web` only when they are:
 
-### Rendering States
+- page-specific
+- route-specific
+- feature-composition-specific
+- clearly ActBound-domain-specific
 
-Every query-backed component must handle:
+#### `@actbound/sdk`
 
-```typescript
-if (query.isLoading) return <LoadingState />;
-if (query.isError) return <ErrorState error={query.error} />;
-if (!query.data?.length) return <EmptyState />;
-return <DataView data={query.data} />;
-```
+Use as the first place to look for:
+
+- frontend-safe shared types
+- schemas
+- UI-consumable contracts
+
+Do not change API semantics through SDK edits.
+If a type gap exists, use a narrow local temporary type and note it as a follow-up for later SDK consolidation.
 
 ---
 
-## 5. Zustand: Client State Only
+## Current Frontend Stack
 
-Zustand is for transient UI state that does not come from the server.
+Preserve and build on the existing stack:
 
-### Allowed
+- React
+- TypeScript strict mode
+- Vite
+- MUI
+- TanStack Router
+- TanStack Query
+- Zustand
+- React Hook Form
+- Zod
+- Axios
+- Biome
 
-- Sidebar collapse / expand
-- UI preferences (theme, locale, text direction)
-- Modal / panel / drawer open state
-- Wizard progress
-- Transient client-only filters
-
-### Prohibited
-
-- Organization list
-- Assistant records
-- Policy data
-- Audit events
-- Connected accounts
-- Any data that originates from an API response
-
-Those belong in TanStack Query.
-
-### Existing Stores
-
-| Store                   | Purpose                          | Persisted |
-| ----------------------- | -------------------------------- | --------- |
-| `useSettingsStore`      | Theme, locale, sidenav, nav type | Yes       |
-| `useNavStore`           | Navigation state                 | No        |
-| `useSettingsPanelStore` | Settings panel visibility        | No        |
+Do not introduce major dependencies unless justified.
 
 ---
 
-## 6. Route Map
+## State Management Rules
 
-### Product Routes
+### Server state
 
-| Route                 | Feature       | Page                          |
-| --------------------- | ------------- | ----------------------------- |
-| `/`                   | dashboard     | Dashboard overview            |
-| `/assistants`         | assistants    | Assistant directory           |
-| `/assistants/:id`     | assistants    | Assistant control panel       |
-| `/organizations`      | organizations | Organization directory        |
-| `/organizations/:id`  | organizations | Organization detail           |
-| `/resources`          | resources     | Resource directory            |
-| `/resources/:id`      | resources     | Resource detail               |
-| `/policies`           | policies      | Policy list                   |
-| `/policies/:id`       | policies      | Policy editor                 |
-| `/policies/simulate`  | policies      | Policy simulation trace       |
-| `/delegations`        | delegations   | Connected accounts / consents |
-| `/security`           | security      | Security controls             |
-| `/security/dashboard` | security      | Security posture dashboard    |
-| `/security/graph`     | security      | Authorization logic graph     |
-| `/audit`              | audit         | Audit log / activity timeline |
-| `/settings`           | settings      | Platform settings             |
+TanStack Query is the standard for server state.
 
-### Auth Routes
+Rules:
 
-| Route            | Page                    |
-| ---------------- | ----------------------- |
-| `/auth/login`    | Sign in (Auth0 PKCE)    |
-| `/auth/callback` | Auth0 redirect callback |
-| `/auth/logout`   | Post-logout landing     |
-| `/error/404`     | Not found               |
+- all server-backed data should flow through Query-backed hooks
+- do not use ad hoc page-level `useEffect + axios` for standard data fetching
+- mutations should eventually invalidate or update known query keys
+- keep data access organized behind frontend utilities/hooks
+
+### Client state
+
+Zustand is for true client-only UI state only.
+
+Examples:
+
+- nav collapse
+- local filters
+- modal/drawer visibility
+- transient wizard state
+- UI preferences
+
+Do not put fetched entity lists or records into Zustand.
 
 ---
 
-## 7. Authentication Architecture
+## Canonical Product Domains
 
-### Rules
+The top-level UI domains are:
 
-- SPA uses OIDC PKCE flow (Auth0 as primary, Keycloak as second provider)
-- Custom domain: `auth.actbound.ai`
-- Audience: `https://api.actbound.ai`
-- Gateway validates tokens and enforces the backend policy boundary
-- UI only handles user/session context needed for presentation
-- No tokens stored in localStorage (Auth SDK manages in-memory or cookie)
-- Auth guards protect routes: `AuthGuard` (requires session), `GuestGuard` (public only)
-- Multi-issuer: the UI receives a normalized principal from the backend regardless of which IdP issued the token
+- Dashboard
+- Assistants
+- Organizations
+- Resources
+- Policies
+- Delegations
+- Security
+- Audit
+- Settings
 
-### Auth Context
-
-```typescript
-interface AuthContext {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  user: User | null;
-  principal: Principal | null; // Normalized from JWT claims
-  identitySource: IdentitySource | null; // Which IdP the user came from
-  loginWithRedirect: (options?: LoginOptions) => void;
-  logout: () => void;
-  getAccessTokenSilently: () => Promise<string>;
-}
-
-interface IdentitySource {
-  provider: "auth0" | "keycloak" | "okta" | "oidc"; // Provider type
-  issuerLabel: string; // Human-readable label (e.g., "Acme SSO")
-  issuerUrl: string; // Issuer URL
-}
-```
-
-### Axios Integration
-
-The Axios instance attaches the access token via interceptor:
-
-```typescript
-axiosInstance.interceptors.request.use(async (config) => {
-  const token = await getAccessTokenSilently();
-  config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-```
+Do not invent new top-level product domains without intentionally updating this context.
 
 ---
 
-## 8. Multi-Issuer UI Requirements
+## Product Intent
 
-ActBound supports multiple trusted identity providers per tenant. The backend normalizes those identities into one internal permission model. The UI displays identity source, provisioning state, and trust-related errors, but treats permissions and authorization results as provider-agnostic.
+ActBound is not a generic analytics dashboard or admin panel.
 
-### What the UI Knows
+The UI must help users understand:
 
-- Which identity provider the current user came from
-- Which providers a tenant trusts
-- How to display identity source in admin, audit, and user-control views
-- What error states look like when issuer/tenant mismatches happen
+- who or what is acting
+- on whose behalf an assistant can act
+- which organizations and resources are in scope
+- what policies govern access
+- what delegations and connected accounts exist
+- what security posture looks like
+- what audit evidence exists
 
-### What the UI Does NOT Own
-
-- JWKS validation or token signature verification
-- Issuer trust registry internals
-- Claim normalization or mapping profiles
-- `issuer|sub` → internal subject binding algorithm
-- OpenFGA subject construction
-
-### Supported Provider Types
-
-| Provider    | Tier | Status          |
-| ----------- | ---- | --------------- |
-| Auth0       | 1    | Primary         |
-| Keycloak    | 1    | Second provider |
-| Okta        | 2    | Future          |
-| Custom OIDC | 2    | Future          |
-
-### UI Language Rules
-
-Use generic terminology throughout — never hard-code provider names in navigation, labels, or page structure:
-
-- "Identity Provider" not "Auth0"
-- "Trusted Issuer" not "our SSO"
-- "Provider Type" with badge icons for Auth0, Keycloak, Okta, Custom OIDC
-
-### Identity Display Model
-
-The UI thinks in terms of two layers:
-
-```
-Internal ActBound identity          External identity source
-─────────────────────────           ────────────────────────
-John Davis                          Source: Keycloak
-Role: Admin                         Issuer: sso.acmerealty.com
-Tenant: Acme Realty                 External ID: (hidden unless admin debug)
-```
-
-Never show raw `sub` values or `issuer|sub` pairs unless in an advanced admin/debug drawer.
-
-### Error States
-
-The UI must handle these backend responses gracefully:
-
-| Error                                    | UI Behavior                                                      |
-| ---------------------------------------- | ---------------------------------------------------------------- |
-| Issuer not trusted for tenant            | "Your identity provider is not authorized for this organization" |
-| Valid token, no linked internal identity | "Your account has not been provisioned yet"                      |
-| Identity not provisioned                 | "Contact your administrator to complete setup"                   |
-| Tenant mismatch                          | "You are signed in to the wrong organization"                    |
-| Account exists, not bound to this org    | "Your account is not a member of this organization"              |
-
-### Surfaces Affected by Multi-Issuer
-
-| Surface          | What to show                                             |
-| ---------------- | -------------------------------------------------------- |
-| Login / sign-in  | Tenant-specific IdP selection (which providers to offer) |
-| User profile     | Identity source badge, linked provider                   |
-| Org membership   | Which users came from which IdP                          |
-| Audit log        | Identity source attribution per event                    |
-| User control     | Connected identities, provisioning state                 |
-| Settings (admin) | Trusted IdPs per tenant, sync health, last sync time     |
-| Error pages      | Issuer/tenant mismatch messaging                         |
-
-### Phased UI Awareness
-
-**Phase 8 (UI Foundation):** Generic IdP language, `IdentitySourceBadge` component, auth error states, login supports provider selection.
-
-**Phase 10 (UI Core):** User detail shows linked IdP. Org admin shows users by provider. Audit entries show identity source.
-
-**Phase 12 (UI Security):** Settings page for trusted IdP management. Sync/binding health indicators. Account linking review.
+Every major screen should make trust boundaries more legible.
 
 ---
 
-## 9. Design System: The Architectural Sentinel
+## Route and Experience Direction
 
-The visual language is defined in the Stitch design exports (`~/Downloads/stitch/actbound_sentinel/DESIGN.md`). Implementation uses MUI theme customization to express these tokens.
+Recommended top-level route direction:
 
-### Creative North Star
+- `/dashboard`
+- `/assistants`
+- `/assistants/$assistantId`
+- `/organizations`
+- `/organizations/$organizationId`
+- `/resources`
+- `/resources/$resourceId`
+- `/policies`
+- `/policies/$policyId`
+- `/policies/simulate`
+- `/delegations`
+- `/delegations/$delegationId` or equivalent detail pattern if adopted
+- `/security`
+- `/security/my-controls` if needed
+- `/audit`
+- `/settings`
 
-"The Architectural Sentinel" — a calm, authoritative guardian interface. Editorial layout with tonal layering and intentional asymmetry. Not a standard SaaS dashboard.
-
-### Color System (Material Design 3)
-
-Map to MUI palette via custom theme:
-
-| Token                      | Hex       | MUI Mapping                       |
-| -------------------------- | --------- | --------------------------------- |
-| `primary`                  | `#003d9b` | `palette.primary.main`            |
-| `primary-container`        | `#0052cc` | `palette.primary.dark`            |
-| `primary-fixed`            | `#dae2ff` | `palette.primary.light`           |
-| `on-primary`               | `#ffffff` | `palette.primary.contrastText`    |
-| `secondary`                | `#4c5d8d` | `palette.secondary.main`          |
-| `tertiary` (burnt orange)  | `#7b2600` | `palette.warning.main`            |
-| `tertiary-container`       | `#a33500` | `palette.warning.dark`            |
-| `error`                    | `#ba1a1a` | `palette.error.main`              |
-| `surface`                  | `#faf8ff` | `palette.background.default`      |
-| `surface-container-low`    | `#f2f3ff` | Custom: `palette.surface.low`     |
-| `surface-container-lowest` | `#ffffff` | Custom: `palette.surface.lowest`  |
-| `surface-container-high`   | `#e2e7ff` | Custom: `palette.surface.high`    |
-| `on-surface`               | `#131b2e` | `palette.text.primary`            |
-| `on-surface-variant`       | `#434654` | `palette.text.secondary`          |
-| `outline`                  | `#737685` | `palette.divider`                 |
-| `outline-variant`          | `#c3c6d6` | Custom: `palette.outline.variant` |
-
-### Typography
-
-| Role              | Font    | Usage                                     |
-| ----------------- | ------- | ----------------------------------------- |
-| Display/Headlines | Manrope | Dashboard summaries, page titles, metrics |
-| Interface/Data    | Inter   | Body text, tables, labels, form fields    |
-
-MUI typography overrides:
-
-```typescript
-typography: {
-  fontFamily: '"Inter", sans-serif',
-  h1: { fontFamily: '"Manrope", sans-serif', fontWeight: 700 },
-  h2: { fontFamily: '"Manrope", sans-serif', fontWeight: 700 },
-  h3: { fontFamily: '"Manrope", sans-serif', fontWeight: 600 },
-  h4: { fontFamily: '"Manrope", sans-serif', fontWeight: 600 },
-  h5: { fontFamily: '"Manrope", sans-serif', fontWeight: 600 },
-  h6: { fontFamily: '"Manrope", sans-serif', fontWeight: 600 },
-}
-```
-
-### Elevation Rules
-
-- **No shadows** for standard cards. Use tonal layering: `surface-container-lowest` on `surface-container-low`
-- **No 1px borders** for sectioning. Background color shifts create structure
-- **Ambient shadows** only for floating elements: 6% opacity, 24-40px blur, 8px Y-offset
-- **Ghost border** fallback for accessibility: `outline-variant` at 20% opacity
-
-### Border Radius Scale
-
-| Token     | Value      | Usage                |
-| --------- | ---------- | -------------------- |
-| `DEFAULT` | `0.125rem` | Minimal              |
-| `lg`      | `0.25rem`  | Subtle               |
-| `xl`      | `0.5rem`   | Standard (buttons)   |
-| `full`    | `0.75rem`  | Pill (badges, chips) |
-
-### Component Conventions
-
-**Buttons:**
-
-- Primary: gradient `primary` → `primary-container` at 135deg, `xl` radius, white text
-- Secondary: ghost style, `surface-container-high` on hover, no border
-- Tertiary: uppercase label, 5% letter-spacing, primary color, no container
-
-**Tables:**
-
-- No vertical or horizontal divider lines
-- Header: `surface-container-low` background
-- Data rows: `surface-container-lowest`
-- High vertical padding (16px)
-
-**Status Badges:**
-
-- Pill shape (`full` radius)
-- `error-container` for high-risk, `primary-fixed` for neutral
-- Text always uses "On" variant (e.g., `on-error-container`)
-
-**Input Fields:**
-
-- No bottom border
-- Background: `surface-container-low`, shifts to `surface-container-highest` on focus
-- Error: ghost border of `error` at 40% opacity (never solid red)
-
-### Design Don'ts
-
-- No `1px solid #CCCCCC` borders
-- No pure black `#000000` text — use `on-surface` (`#131b2e`)
-- No standard "Warning Yellow" — use `tertiary` burnt orange (`#7b2600`)
-- No shadows for standard cards — use tonal layering
-- If a view feels heavy, increase spacing rather than adding dividers
+Exact route filenames may vary with current TanStack Router conventions, but the information architecture should follow this model.
 
 ---
 
-## 10. Shared Product Primitives
+## Shared UI Direction
 
-Build these before page implementation to maintain visual consistency:
+The UI vocabulary should be ActBound-specific and reusable across phases.
 
-| Component             | Purpose                                             |
-| --------------------- | --------------------------------------------------- |
-| `AppShell`            | Main layout with sidebar, header, content area      |
-| `PageHeader`          | Page title, description, breadcrumbs, actions       |
-| `SectionCard`         | Tonal-layered content block (no shadow)             |
-| `MetricCard`          | Key metric display with label, value, trend         |
-| `EntityTable`         | MUI DataGrid wrapper with Sentinel styling          |
-| `StatusBadge`         | Pill badge with semantic color mapping              |
-| `EmptyState`          | Centered illustration + message + action CTA        |
-| `LoadingState`        | Skeleton loader matching page layout                |
-| `ErrorState`          | Error message + retry action                        |
-| `ConfirmDialog`       | Glass-effect confirmation modal                     |
-| `DetailDrawer`        | Side panel for entity detail / inline editing       |
-| `TrustGauge`          | Radial trust score display (0-100)                  |
-| `ActivityItem`        | Timeline entry with icon, actor, action, timestamp  |
-| `PolicyBadge`         | Compliance indicator (HIPAA, SOC2, etc.)            |
-| `IdentitySourceBadge` | Provider badge (Auth0, Keycloak, Okta, Custom OIDC) |
+Preferred reusable patterns include:
 
----
+- page header/title pattern
+- section/card wrapper
+- metric/stat card
+- empty state
+- loading state
+- error state
+- summary blocks
+- detail panels
+- status badges
+- timeline or recent-activity snapshots
+- relationship summary sections
 
-## 11. Screen Inventory (from Stitch Designs)
-
-34 screens exported from Figma. Design source: `~/Downloads/stitch/`
-
-### Authentication (2)
-
-- `sign_in_actbound_ai_1` — Primary sign-in with SSO
-- `sign_in_actbound_ai_2` — Enhanced security messaging variant
-
-### Dashboard (3)
-
-- `dashboard_actbound_ai` — Main dashboard: trust score, accounts, resources, assistants, activity
-- `security_dashboard` — Security posture monitoring, authorization metrics
-- `organizations_overview` — High-level organization status
-
-### Policies (4)
-
-- `policy_engine_all_policies_1` — Policy list with filters
-- `policy_engine_all_policies_2` — Alternate layout
-- `policy_editor_financial_data_access` — Policy editor (Financial Data Access)
-- `policy_editor_global_finance_policy` — Policy editor (Global Finance Policy)
-
-### Assistants (4)
-
-- `ai_assistant_directory_1` — Assistant registry
-- `ai_assistant_directory_2` — Alternate directory view
-- `assistant_control_fin_sentry_alpha` — Assistant control panel
-- `assistant_control_financial_analyst_ai` — Assistant control panel
-
-### Delegations & Accounts (3)
-
-- `connected_accounts_delegations` — Connected accounts and delegation settings
-- `my_security_controls` — Personal security controls
-- `access_modals_states` — Access request/grant modals
-
-### Organizations (3)
-
-- `organizations_directory` — Multi-org directory
-- `organization_acme_realty_1` — Org detail view
-- `organization_acme_realty_2` — Alternate org detail
-
-### Resources (4)
-
-- `resources_directory` — Resource directory
-- `protected_resources_directory` — Protected resources with access levels
-- `resource_financial_q3_drafts_1` — Resource detail
-- `resource_financial_q3_drafts_2` — Alternate resource detail
-
-### Security & Audit (3)
-
-- `audit_log_security_events` — Activity/audit log
-- `authorization_logic_graph_1` — Authorization decision graph
-- `authorization_logic_graph_2` — Alternate graph view
-
-### Simulation & Modals (2)
-
-- `policy_simulation_trace` — Policy evaluation trace
-- `assistant_modals_audit_states` — Assistant audit modals
-
-### Settings (2)
-
-- `platform_settings_1` — Platform configuration
-- `platform_settings_2` — Alternate settings view
-
-### UI Patterns (2)
-
-- `common_states_ui_patterns` — Button, form, interaction states reference
-- `empty_loading_states` — Empty states, skeletons, transitions
+Prefer `@actbound/ui` first.
+Add app-local primitives only when the component is domain-specific or route-specific.
 
 ---
 
-## 12. Navigation Structure
+## Completed Work
 
-### Sidebar Navigation
+### Phase 0 — UI hardening
 
-```
-Dashboard
-Accounts / Connected Accounts
-Activity / Audit Log
-Policies / Policy Engine
-Access / Security
-Assistants / AI Assistants
-Resources / Vault
-Organizations
-User Control
-Settings
-```
+Implemented, but review follow-up remains.
 
-### Header
+Summary:
 
-- Search bar
-- Notifications (bell with indicator)
-- Organization switcher
-- User profile (avatar + name)
+- architectural expectations documented
+- ActBound domain map established
+- route/sitemap/path direction aligned to core domains
+- leftover demo semantics removed or reduced
+- placeholder pages created for core domains
+- frontend-only boundary reinforced
+- workspace package references updated, but package identity cleanup remains
+- build stability restored
+
+Outcome:
+
+- the shell is now largely positioned as an ActBound app rather than a generic template
+
+Still needs completion:
+
+- rename `apps/web` to the expected workspace package identity so root `pnpm --filter @actbound/web ...` workflows resolve correctly
+- replace the `/` starter route with an ActBound landing/default dashboard experience
+- remove template auth sitemap/path entries that do not map to the active router
+- remove remaining template residue in app docs, settings labels, sample credentials, and starter-specific copy/assets
+
+### Phase 1 — Shell refinement + dashboard foundation
+
+Implemented, but review follow-up remains.
+
+Summary:
+
+- dashboard moved from placeholder toward a meaningful ActBound landing experience
+- shared page/section/metric/empty-state vocabulary improved
+- shell polish advanced enough to support future domains
+- dashboard framing shifted toward delegated AI control plane language
+
+Outcome:
+
+- the app now has reusable page composition patterns and a stronger dashboard foundation
+
+Still needs completion:
+
+- make the dashboard the actual default authenticated landing experience rather than an alternate route behind `/dashboard`
+- add direct dashboard navigation/actions into core product domains so the landing view behaves like a control plane entry point
+- make shared breadcrumb/page-level navigation router-aware so in-app transitions stay inside the SPA shell
+- tighten dashboard copy and summary framing where it still reads as generic dashboard content instead of ActBound-specific control-plane guidance
+
+### Phase 2 — Assistants
+
+Completed.
+
+Summary:
+
+- assistants index implemented
+- assistant detail foundation established
+- assistant-specific status/capability/summary patterns introduced
+- UI framing emphasizes bounded assistant authority
+
+Outcome:
+
+- assistants are now a real product surface instead of placeholders
+
+### Phase 3 — Organizations + Resources
+
+Completed.
+
+Summary:
+
+- organizations index and detail foundation implemented
+- resources index and detail foundation implemented
+- governance and protection signals introduced
+- relationship-oriented summaries now connect assistants, organizations, and resources
+
+Outcome:
+
+- organizations and resources now function as visible trust boundaries in the UI
+
+### Phase 4 — Policies
+
+Completed.
+
+Summary:
+
+- policies index implemented
+- policy detail foundation established
+- policy simulation / trace foundation introduced
+- policy scope, impact, and denial/warning concepts became visible UI surfaces
+
+Outcome:
+
+- the authorization model is now represented in the UI beyond simple summaries
+
+### Phase 5 — Delegations + Connected Accounts
+
+Ready / in progress depending on latest Codex completion status.
+
+Expected scope:
+
+- delegations index
+- delegation detail or expandable detail pattern
+- connected accounts coverage
+- delegation/account-specific summaries and status semantics
+
+If Codex has completed this phase successfully, treat it as complete and update the status lines below accordingly.
 
 ---
 
-## 13. Mock-First Development
+## Current Status Summary
 
-Build UI against stable contracts before real backend integration.
+### Complete
 
-### Strategy
+- Phase 2 — assistants
+- Phase 3 — organizations + resources
+- Phase 4 — policies
 
-1. Define typed gateway response shapes in `services/api/gateway/*.ts`
-2. Create feature fixtures in `features/{feature}/mocks/`
-3. Pages build against contracts — swap to real APIs with minimal churn
-4. Use TanStack Query's `initialData` or mock service workers for development
+### Complete with follow-up required
 
-### Rules
+- Phase 0 — UI hardening
+- Phase 1 — shell refinement + dashboard foundation
 
-- Mock data must match the exact shape of gateway DTOs
-- Mock data lives in feature directories, not in shared locations
-- Feature flags or environment variables control mock vs real API usage
-- No mock data in production builds
+### In progress / just executed
 
----
+- Phase 5 — delegations + connected accounts
 
-## 14. Implementation Phases
+### Remaining
 
-### Phase 0 — Hardening Pass (maps to context.md Phase 8)
-
-- Scaffold Aurora template into `apps/web`
-- Replace route map with product domains (Section 6)
-- Replace nav labels and page titles with real product names
-- Configure MUI theme with Sentinel design tokens (Section 9)
-- Configure Manrope + Inter fonts
-- Define gateway API client structure (Section 2)
-- Set TanStack Query conventions (Section 4)
-- Set Zustand usage limits (Section 5)
-- Build shared product primitives (Section 10), including `IdentitySourceBadge`
-- Scaffold empty routes/pages for all features
-- Wire Auth0 provider with `auth.actbound.ai` domain
-- Use generic "Identity Provider" language throughout — no hard-coded provider names
-- Implement auth error states for issuer/tenant mismatch (Section 8)
-- Login entry supports tenant-specific IdP selection
-
-### Phase 1 — App Shell + Dashboard (maps to context.md Phase 8)
-
-- Implement `AppShell` with sidebar navigation matching Stitch designs
-- Implement main dashboard with `MetricCard` grid, `TrustGauge`, activity timeline
-- Wire dashboard queries to gateway API
-- Implement `LoadingState`, `EmptyState`, `ErrorState` patterns
-
-### Phase 2 — Assistants + Organizations (maps to context.md Phase 10)
-
-- Assistant directory (list, search, filter)
-- Assistant control panel (detail, delegation, kill-switch)
-- Organization directory and detail views
-- Entity tables with Sentinel styling
-- User detail views show linked IdP via `IdentitySourceBadge`
-- Org admin views show which users came from which provider
-- Audit entries display identity source attribution
-
-### Phase 3 — Policies + Security (maps to context.md Phase 10)
-
-- Policy list and editor
-- Policy simulation trace
-- Security dashboard and authorization logic graph
-- Connected accounts and delegation management
-
-### Phase 4 — Audit + Settings (maps to context.md Phase 12)
-
-- Audit log with timeline view (identity source per event)
-- Platform settings including trusted IdP management per tenant
-- Sync/binding health indicators per provider
-- User security controls
-- Account linking review for multi-provider users
+- Phase 6 — security
+- Phase 7 — audit
+- Phase 8 — settings + polish
 
 ---
 
-## 15. Environment Variables
+## What Is Left
 
-```
-VITE_API_URL=http://localhost:3001        # Orchestrator-API gateway
-VITE_AUTH0_DOMAIN=auth.actbound.ai
-VITE_AUTH0_CLIENT_ID=VKm1ClfzHqI0VSKtjtzAtBDbgeBXAVLp
-VITE_AUTH0_AUDIENCE=https://api.actbound.ai
-VITE_APP_PORT=5173
-```
+### Phase 0 — UI hardening follow-up
+
+Need to complete:
+
+- rename `apps/web` from `vite-ts-starter` to the intended workspace package identity so monorepo root scripts work again
+- retire the current starter page at `/` and route authenticated users into a real ActBound landing surface
+- remove stale auth/template sitemap and path entries that are not backed by live routes
+- finish template cleanup in `apps/web` docs, config labels, sample credentials, translations, and unused starter references
+
+### Phase 1 — Shell refinement + dashboard foundation follow-up
+
+Need to complete:
+
+- make the dashboard the default entry surface for authenticated users
+- add meaningful route-linked actions from the dashboard into assistants, policies, resources, delegations, security, and audit
+- update shared breadcrumb navigation to use router-aware links instead of full-page reload paths
+- run a copy/polish pass on the dashboard so the primary landing surface consistently reads as an ActBound control plane
+- review whether the current dashboard sections are the right phase-appropriate foundation versus carrying placeholder summary blocks forward unchanged
+
+### Phase 6 — Security
+
+Need to implement:
+
+- security dashboard
+- my security controls or equivalent user-facing security view
+- token/account/delegation risk or posture indicators
+- security-specific summary blocks
+- attention/health patterns
+- coherence with delegations, policies, and resources
+
+### Phase 7 — Audit
+
+Need to implement:
+
+- audit log index/overview
+- security events or activity exploration
+- timeline/event summary patterns
+- event detail or expandable event inspection
+- filters/search only if needed for a clean foundation
+- visible linkage back to assistants, delegations, policies, and resources
+
+### Phase 8 — Settings + polish
+
+Need to implement:
+
+- settings foundation
+- route completeness review
+- consistency pass across headers, empty/loading/error states, spacing, and navigation
+- shared primitive cleanup opportunities
+- responsive cleanup
+- final template residue removal
+- prep for real API/data integration work
 
 ---
 
-## 16. Hard Boundaries
+## Known Constraints and Working Assumptions
 
-1. **No backend authorization logic in React.** The UI renders decisions, not makes them.
-2. **No imports from `packages/authorization` or `packages/openfga`.** Authorization arrives via API.
-3. **No NestJS, Drizzle, or backend infrastructure imports.**
-4. **No ad hoc `useEffect + axios` data fetching.** All server state through TanStack Query.
-5. **No server-state caching in Zustand.** Zustand is client UI state only.
-6. **No direct calls to internal microservices.** All traffic through the gateway.
-7. **No scattered base URLs.** Single `VITE_API_URL` for the gateway.
-8. **No tokens in localStorage.** Auth0 SDK manages token lifecycle.
-9. **No duplicate Zod schemas.** Import from `packages/sdk` when available.
+- Real backend integrations are not yet the priority for these UI phases.
+- Mock-first implementation remains acceptable and preferred when real contracts are not ready.
+- The frontend should remain easy to swap from mock data to gateway-backed query hooks later.
+- Shared package consolidation is allowed as a future refinement topic, but large shared-package refactors are not a priority during these phased UI builds.
+- Security and audit surfaces must become increasingly explicit as phases advance.
+
+---
+
+## Definition of Done for a Page
+
+A page is not complete unless it includes:
+
+- route wired
+- ActBound-aligned title/header
+- typed data shape or mock
+- loading state
+- empty state
+- error state
+- coherent spacing/layout
+- no leftover generic demo/template text
+- visual alignment with the existing shell and domain model
+
+---
+
+## Agent Rules for Ongoing UI Work
+
+### Antigravity
+
+Use Antigravity for:
+
+- page implementation
+- route/page scaffolding
+- incremental UI composition
+- mock-first domain surfaces
+- local feature components
+- frontend-only docs updates
+
+Antigravity must not:
+
+- change backend behavior
+- redesign API semantics
+- introduce backend coupling
+
+### Claude Code
+
+Use Claude Code for:
+
+- backend/API work
+- contract/server implementation
+- architecture review
+- cross-layer consistency review
+- follow-up on integration alignment
+
+---
+
+## Recommended Next Steps
+
+1. Fix Phase 0 completion gaps
+2. Fix Phase 1 completion gaps
+3. Finish or confirm Phase 5 Delegations + Connected Accounts
+4. Implement Phase 6 Security
+5. Implement Phase 7 Audit
+6. Implement Phase 8 Settings + polish
+7. After those UI foundations are complete, plan a focused integration pass for real gateway-backed data flows
+
+---
+
+## Follow-Up Cleanup Opportunities
+
+These are valid later, but not current blockers:
+
+- promote repeated app-local primitives into `@actbound/ui`
+- consolidate repeated local mock types into clearer feature-owned models
+- align any temporary local types with `@actbound/sdk` once shared contracts are stable
+- standardize query key factories when real integration begins
+- review detail-route consistency across all top-level domains
+
+---
+
+## Next Prompt Target
+
+The next recommended prompt is:
+
+- **Phase 6 — Security**
+
+After Security, continue with:
+
+- Phase 7 — Audit
+- Phase 8 — Settings + polish

@@ -1,24 +1,33 @@
-import { fileURLToPath, URL } from "node:url";
-
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig, loadEnv } from "vite";
+import checker from "vite-plugin-checker";
+import tsconfigPaths from "vite-tsconfig-paths";
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@actbound/authorization": fileURLToPath(
-        new URL("../../packages/authorization/src/index.ts", import.meta.url),
-      ),
-      "@actbound/sdk": fileURLToPath(
-        new URL("../../packages/sdk/src/index.ts", import.meta.url),
-      ),
-      "@actbound/ui": fileURLToPath(
-        new URL("../../packages/ui/src/index.ts", import.meta.url),
-      ),
+export default ({ mode }) => {
+  process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+
+  return defineConfig({
+    plugins: [
+      react(),
+      tsconfigPaths(),
+      checker({
+        typescript: false,
+        // eslint: {
+        //   useFlatConfig: true,
+        //   lintCommand: 'eslint "./src/**/*.{ts,tsx}"',
+        // },
+        overlay: {
+          initialIsOpen: false,
+        },
+      }),
+    ],
+    preview: {
+      port: Number(process.env.VITE_APP_PORT || 5001),
     },
-  },
-  server: {
-    port: 5173,
-  },
-});
+    server: {
+      host: "0.0.0.0",
+      port: Number(process.env.VITE_APP_PORT || 5001),
+    },
+    base: process.env.VITE_BASENAME || "/",
+  });
+};

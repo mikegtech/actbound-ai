@@ -1,6 +1,7 @@
 # Dependencies
 node_modules
 .pnpm-store
+package-lock.json
 
 # Build output
 dist
@@ -10,6 +11,11 @@ coverage
 # Generated
 docs/openapi
 .openfga-model-id
+
+# Unused scaffold assets that exceed the repository large-file hook limit.
+apps/web/src/assets/json/world.json
+apps/web/src/assets/images/background/8.webp
+apps/web/src/assets/images/background/10.webp
 
 # OS
 .DS_Store
@@ -36,3 +42,5 @@ service-account*.json
 *.swp
 *.swo
 .mcp.json
+
+/tmp-puppeteer/**
