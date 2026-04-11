@@ -53,7 +53,7 @@ export const ConnectedAccountCard = ({ account }: Props) => {
                   textTransform: "capitalize",
                 }}
               >
-                {account.provider} Integration
+                {account.provider} Connected Account
               </Typography>
               <Typography
                 variant="caption"

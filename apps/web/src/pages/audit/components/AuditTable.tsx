@@ -11,6 +11,7 @@ import {
   Box,
 } from "@mui/material";
 import IconifyIcon from "components/base/IconifyIcon";
+import { EntityRouteLink } from "components/common/EntityRouteLink";
 import type { AuditEventDto } from "../types";
 import { AuditStatusBadge } from "./AuditStatusBadge";
 
@@ -85,9 +86,20 @@ export const AuditTable = ({ events, onRowClick }: AuditTableProps) => {
                     />
                   )}
                   <Box>
-                    <Typography variant="body2" fontWeight={500}>
-                      {event.actor.displayName || event.actor.sub}
-                    </Typography>
+                    {event.actor.principalType === "assistant" &&
+                    event.assistantContext ? (
+                      <EntityRouteLink
+                        type="assistant"
+                        id={event.assistantContext.assistantId}
+                        label={event.actor.displayName || event.actor.sub}
+                        variant="body2"
+                        stopPropagation
+                      />
+                    ) : (
+                      <Typography variant="body2" fontWeight={500}>
+                        {event.actor.displayName || event.actor.sub}
+                      </Typography>
+                    )}
                     {event.actor.principalType === "assistant" && (
                       <Typography variant="caption" color="text.secondary">
                         Automated Request
@@ -115,9 +127,19 @@ export const AuditTable = ({ events, onRowClick }: AuditTableProps) => {
               <TableCell>
                 {event.resource ? (
                   <Box>
-                    <Typography variant="body2" fontWeight={500}>
-                      {event.resource.displayName}
-                    </Typography>
+                    {event.resource.routeType ? (
+                      <EntityRouteLink
+                        type={event.resource.routeType}
+                        id={event.resource.id}
+                        label={event.resource.displayName}
+                        variant="body2"
+                        stopPropagation
+                      />
+                    ) : (
+                      <Typography variant="body2" fontWeight={500}>
+                        {event.resource.displayName}
+                      </Typography>
+                    )}
                     <Typography variant="caption" color="text.secondary">
                       {event.resource.type}
                     </Typography>

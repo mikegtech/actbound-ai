@@ -12,11 +12,38 @@ const MOCK_AUDIT_EVENTS: AuditEventDto[] = [
       principalType: "user",
       displayName: "Alice Security",
     },
-    resource: {
-      type: "repository",
-      id: "repo_987",
-      displayName: "actbound-core",
+    assistantContext: {
+      assistantId: "asst_01H1",
+      displayName: "Fin-Sentry Alpha",
+      delegatedBySub: "usr_jane",
     },
+    resource: {
+      type: "api",
+      id: "res_222_pg",
+      displayName: "Payment_Gateway_v3",
+      routeType: "resource",
+    },
+    organizationId: "org_003_qk",
+    linkedEntities: [
+      {
+        type: "assistant",
+        id: "asst_01H1",
+        label: "Fin-Sentry Alpha",
+        context: "assistant evaluated",
+      },
+      {
+        type: "policy",
+        id: "pol_333_fr",
+        label: "Financial-Reporting-RO",
+        context: "policy evaluated",
+      },
+      {
+        type: "organization",
+        id: "org_003_qk",
+        label: "QuantKnot AI",
+        context: "owning organization",
+      },
+    ],
     decision: {
       signal: "allowed",
     },
@@ -31,20 +58,48 @@ const MOCK_AUDIT_EVENTS: AuditEventDto[] = [
     action: "write",
     occurredAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     actor: {
-      sub: "ast_456xyz",
+      sub: "asst_01H3",
       principalType: "assistant",
-      displayName: "CodeReview Agent",
+      displayName: "Cyber-Guard Prime",
     },
     assistantContext: {
-      assistantId: "ast_456xyz",
-      displayName: "CodeReview Agent",
-      delegatedBySub: "usr_abc123",
+      assistantId: "asst_01H3",
+      displayName: "Cyber-Guard Prime",
+      delegatedBySub: "usr_admin",
     },
     resource: {
-      type: "document",
-      id: "doc_444",
-      displayName: "Architecture_Plan.md",
+      type: "infrastructure",
+      id: "res_333_ec",
+      displayName: "Edge_Compute_Node_04",
+      routeType: "resource",
     },
+    organizationId: "org_002_va",
+    linkedEntities: [
+      {
+        type: "assistant",
+        id: "asst_01H3",
+        label: "Cyber-Guard Prime",
+        context: "assistant actor",
+      },
+      {
+        type: "delegation",
+        id: "dlg_sec_guard",
+        label: "AWS security audit role delegation",
+        context: "delegation boundary",
+      },
+      {
+        type: "policy",
+        id: "pol_111_ca",
+        label: "Cloud-Admin-Global-Override",
+        context: "governing policy",
+      },
+      {
+        type: "security_signal",
+        id: "risk_2",
+        label: "Out-of-scope bucket access attempt",
+        context: "security signal",
+      },
+    ],
     decision: {
       signal: "denied",
       reasons: [
@@ -70,11 +125,44 @@ const MOCK_AUDIT_EVENTS: AuditEventDto[] = [
       principalType: "user",
       displayName: "Bob Manager",
     },
+    assistantContext: {
+      assistantId: "asst_01H2",
+      displayName: "Build-Bot 7",
+      delegatedBySub: "usr_devops",
+    },
     resource: {
       type: "delegation",
-      id: "del_111",
-      displayName: "Temporary Review Auth",
+      id: "dlg_cicd_bot",
+      displayName: "CI/CD repository automation delegation",
+      routeType: "delegation",
     },
+    organizationId: "org_001_nc",
+    linkedEntities: [
+      {
+        type: "assistant",
+        id: "asst_01H2",
+        label: "Build-Bot 7",
+        context: "assistant receiving delegation",
+      },
+      {
+        type: "delegation",
+        id: "dlg_cicd_bot",
+        label: "CI/CD repository automation delegation",
+        context: "created delegation",
+      },
+      {
+        type: "policy",
+        id: "pol_111_ca",
+        label: "Cloud-Admin-Global-Override",
+        context: "policy requiring review",
+      },
+      {
+        type: "organization",
+        id: "org_001_nc",
+        label: "NeuroCore Systems",
+        context: "owning organization",
+      },
+    ],
     decision: {
       signal: "warning",
       reasons: [
@@ -95,6 +183,15 @@ const MOCK_AUDIT_EVENTS: AuditEventDto[] = [
       principalType: "user",
       displayName: "Alice Security",
     },
+    organizationId: "org_003_qk",
+    linkedEntities: [
+      {
+        type: "organization",
+        id: "org_003_qk",
+        label: "QuantKnot AI",
+        context: "active user context",
+      },
+    ],
     decision: {
       signal: "allowed",
     },

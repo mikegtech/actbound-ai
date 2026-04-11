@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "@tanstack/react-router";
 import IconifyIcon from "components/base/IconifyIcon";
+import { EntityRouteLink } from "components/common/EntityRouteLink";
 import { PageHeader } from "components/common/PageHeader";
 import { SectionWrapper } from "components/common/SectionWrapper";
 import { ErrorState, LoadingState } from "components/common/StateViews";
@@ -338,9 +339,28 @@ const DelegationDetail = ({ id }: DelegationDetailProps) => {
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {delegation.auditEventIds.length > 0
-                          ? delegation.auditEventIds.join(", ")
+                          ? "Related audit evidence is available for this delegation."
                           : "No audit event IDs are attached to this mock delegation."}
                       </Typography>
+                      {delegation.auditEventIds.length > 0 && (
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                          mt={0.5}
+                        >
+                          {delegation.auditEventIds.map((auditEventId) => (
+                            <EntityRouteLink
+                              key={auditEventId}
+                              type="audit_event"
+                              id={auditEventId}
+                              label={auditEventId}
+                              variant="caption"
+                            />
+                          ))}
+                        </Stack>
+                      )}
                     </Box>
                     <RouterLink to="/audit" style={{ textDecoration: "none" }}>
                       <Button size="small" variant="text">
@@ -361,9 +381,30 @@ const DelegationDetail = ({ id }: DelegationDetailProps) => {
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {delegation.securitySignalIds.length > 0
-                          ? delegation.securitySignalIds.join(", ")
+                          ? "Related security signals are available for this delegation."
                           : "No active security signal IDs are attached."}
                       </Typography>
+                      {delegation.securitySignalIds.length > 0 && (
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                          mt={0.5}
+                        >
+                          {delegation.securitySignalIds.map(
+                            (securitySignalId) => (
+                              <EntityRouteLink
+                                key={securitySignalId}
+                                type="security_signal"
+                                id={securitySignalId}
+                                label={securitySignalId}
+                                variant="caption"
+                              />
+                            ),
+                          )}
+                        </Stack>
+                      )}
                     </Box>
                     <RouterLink
                       to="/security"

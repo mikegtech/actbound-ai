@@ -451,6 +451,18 @@ Completed in this sprint:
 - aligned Settings integrations with the same connected-account mock data used by Trust Core
 - improved Settings tab behavior for mobile widths without changing backend behavior
 
+## Production Follow-Up Triage Sprint 3
+
+Completed in this sprint:
+
+- added an app-specific route-aware entity link helper for assistants, organizations, resources, policies, delegations, audit events, and security signals
+- updated Security risk/attention cards so routed source entities and related boundaries link to source pages instead of rendering as inert IDs
+- updated denied-policy snapshot cards so policies, assistants, resources, delegations, organizations, and audit evidence link to available routes
+- enriched audit mock events with consistent assistant, resource, delegation, policy, organization, and security references
+- updated the audit table and inspection drawer to render linked investigation context without turning the surface into a raw log viewer
+- added list-level audit/security links for delegation detail evidence IDs where dedicated audit-event or security-signal routes do not exist
+- normalized Connected Account terminology across Trust Core, Settings, and Security copy
+
 ---
 
 ## Current Status Summary
@@ -463,16 +475,17 @@ Completed in this sprint:
 
 - Phase 0 — UI hardening
 - Phase 1 — shell refinement + dashboard foundation
+- Phase 2 — assistants
 - Phase 3 — organizations + resources
 - Phase 4 — policies
+- Phase 5 — delegations + connected accounts
+- Phase 6 — security
 - Phase 7 — audit
+- Phase 8 — settings + polish
 
 ### In progress / just executed
 
-- Phase 2 — assistants
-- Phase 5 — delegations + connected accounts
-- Phase 6 — security
-- Phase 8 — settings + polish
+- Audit/security coherence sprint executed; remaining work is tracked as follow-up below
 
 ### Remaining
 
@@ -499,7 +512,8 @@ Need to complete:
 Need to complete:
 
 - implement assistant filters, creation, editing, restriction, rule configuration, and threshold review when those flows are in scope
-- replace frontend-only assistant boundary summaries with gateway-backed data when contracts exist and deepen direct source linking for audit/security records
+- replace frontend-only assistant boundary summaries with gateway-backed data when contracts exist
+- replace list-level audit/security links with event- or signal-specific routes when those route patterns exist
 
 ### Phase 3 — Organizations + Resources follow-up
 
@@ -528,8 +542,9 @@ Need to complete:
 
 Need to complete:
 
-- link risks and denials to source assistants, connected accounts, delegations, policies, resources, or audit events
 - replace frontend-only control and posture summaries with gateway-backed data when contracts exist
+- add direct Connected Account detail navigation if that route becomes product scope; current cards link through related Trust Core delegation boundaries
+- replace list-level audit navigation with audit-event deep links or filters when the audit route supports them
 - implement safe security-control mutations such as rotation and revocation when those flows are in scope
 
 ### Phase 7 — Audit follow-up
@@ -537,7 +552,7 @@ Need to complete:
 Need to complete:
 
 - add filters/search/sorting once event volume requires it
-- populate source entity IDs consistently so events can link to assistants, delegations, policies, resources, organizations, and security findings
+- add event-focused routing or search params for direct audit-event navigation from security and delegation surfaces
 - enrich decision reasons with policy evaluation context
 - add pagination or an explicit fixed-window model before expanding event data
 - review raw metadata rendering before connecting real audit payloads

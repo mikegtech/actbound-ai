@@ -10,6 +10,10 @@ import {
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { Link as RouterLink } from "@tanstack/react-router";
+import {
+  EntityRouteLink,
+  entityTypeLabel,
+} from "components/common/EntityRouteLink";
 import { UnavailableAction } from "components/common/UnavailableAction";
 import { useSecurityControls } from "./api/useSecurityQueries";
 
@@ -32,9 +36,9 @@ const SecurityControls = () => {
         My Security Controls
       </Typography>
       <Typography variant="body1" color="text.secondary" mb={4}>
-        Review typed frontend controls tied to connected-account posture and
-        delegation boundaries. Mutation controls stay disabled until safe
-        gateway flows exist.
+        Review typed frontend controls tied to Connected Account posture and
+        Trust Core delegation boundaries. Mutation controls stay disabled until
+        safe gateway flows exist.
       </Typography>
 
       {isError && (
@@ -93,9 +97,33 @@ const SecurityControls = () => {
                       />
                     </Stack>
                     <Typography variant="caption" color="text.secondary">
-                      {control.sourceType.replace("_", " ")}:{" "}
-                      {control.sourceLabel} ({control.sourceId})
+                      {entityTypeLabel(control.sourceType)}:{" "}
+                      {control.sourceType === "delegation" ? (
+                        <EntityRouteLink
+                          type="delegation"
+                          id={control.sourceId}
+                          label={control.sourceLabel}
+                          variant="caption"
+                        />
+                      ) : (
+                        control.sourceLabel
+                      )}
                     </Typography>
+                    {control.relatedDelegationId && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                      >
+                        Boundary:{" "}
+                        <EntityRouteLink
+                          type="delegation"
+                          id={control.relatedDelegationId}
+                          label={control.relatedDelegationId}
+                          variant="caption"
+                        />
+                      </Typography>
+                    )}
                   </Box>
                 </Stack>
 

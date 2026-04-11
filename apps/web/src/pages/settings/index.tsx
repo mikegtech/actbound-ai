@@ -67,7 +67,7 @@ const Settings = () => {
         {/* Header Block */}
         <PageHeader
           title="Settings"
-          subtitle="Review read-only frontend settings for identity, defaults, integrations, and security controls."
+          subtitle="Review read-only frontend settings for identity, defaults, Connected Accounts, and security controls."
         />
 
         <Alert severity="info" sx={{ borderRadius: 2 }}>
@@ -84,7 +84,7 @@ const Settings = () => {
 
         {accountsError && (
           <Alert severity="error" sx={{ borderRadius: 2 }}>
-            Failed to load connected-account data for integrations.
+            Failed to load Connected Account data for settings.
           </Alert>
         )}
 
@@ -141,7 +141,7 @@ const Settings = () => {
                 sx={{ gap: 1.5 }}
               />
               <Tab
-                label="Gateway Integrations"
+                label="Connected Accounts"
                 icon={<IconifyIcon icon="ph:plug" />}
                 iconPosition="start"
                 sx={{ gap: 1.5 }}
@@ -260,7 +260,7 @@ const Settings = () => {
             <SettingsTabPanel value={tabIndex} index={2}>
               <Stack spacing={3} maxWidth={600}>
                 <Typography variant="h5" fontWeight={700}>
-                  Registered Integration Systems
+                  Connected Accounts
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Connected accounts are read from the same Trust Core mock data
@@ -352,9 +352,9 @@ const Settings = () => {
                     )}
                     <UnavailableAction
                       variant="outlined"
-                      reason="Integration management is read-only until connected-account mutation flows exist."
+                      reason="Connected Account management is read-only until mutation flows exist."
                     >
-                      Manage Integrations
+                      Manage Connected Accounts
                     </UnavailableAction>
                   </Stack>
                 )}

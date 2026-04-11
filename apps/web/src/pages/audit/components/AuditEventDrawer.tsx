@@ -7,8 +7,13 @@ import {
   Divider,
   Stack,
   Alert,
+  Chip,
 } from "@mui/material";
 import IconifyIcon from "components/base/IconifyIcon";
+import {
+  EntityRouteLink,
+  entityTypeLabel,
+} from "components/common/EntityRouteLink";
 import type { AuditEventDto } from "../types";
 import { AuditStatusBadge } from "./AuditStatusBadge";
 
@@ -124,15 +129,39 @@ export const AuditEventDrawer = ({
                       sx={{ color: "text.secondary" }}
                     />
                   )}
-                  <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-                    {event.actor.displayName || event.actor.sub}
-                  </Typography>
+                  {event.actor.principalType === "assistant" &&
+                  event.assistantContext ? (
+                    <EntityRouteLink
+                      type="assistant"
+                      id={event.assistantContext.assistantId}
+                      label={event.actor.displayName || event.actor.sub}
+                      variant="body2"
+                    />
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      sx={{ fontFamily: "monospace" }}
+                    >
+                      {event.actor.displayName || event.actor.sub}
+                    </Typography>
+                  )}
                 </Box>
                 {event.assistantContext && (
                   <Box display="flex" alignItems="center" gap={1} pl={3}>
                     <Typography variant="caption" color="text.secondary">
-                      on behalf of {event.assistantContext.delegatedBySub}
+                      Assistant context:
                     </Typography>
+                    <EntityRouteLink
+                      type="assistant"
+                      id={event.assistantContext.assistantId}
+                      label={event.assistantContext.displayName}
+                      variant="caption"
+                    />
+                    {event.assistantContext.delegatedBySub && (
+                      <Typography variant="caption" color="text.secondary">
+                        delegated by {event.assistantContext.delegatedBySub}
+                      </Typography>
+                    )}
                   </Box>
                 )}
 
@@ -178,19 +207,106 @@ export const AuditEventDrawer = ({
                       >
                         Resource:{" "}
                       </Typography>
+                      {event.resource.routeType ? (
+                        <EntityRouteLink
+                          type={event.resource.routeType}
+                          id={event.resource.id}
+                          label={event.resource.displayName}
+                          variant="body2"
+                        />
+                      ) : (
+                        <Typography
+                          component="span"
+                          fontWeight={600}
+                          variant="body2"
+                        >
+                          {event.resource.displayName}
+                        </Typography>
+                      )}{" "}
                       <Typography
                         component="span"
-                        fontWeight={600}
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        ({event.resource.type})
+                      </Typography>
+                    </Typography>
+                  )}
+                  {event.organizationId && (
+                    <Typography variant="body2">
+                      <Typography
+                        component="span"
+                        color="text.secondary"
                         variant="body2"
                       >
-                        {event.resource.displayName} ({event.resource.type})
+                        Organization:{" "}
                       </Typography>
+                      <EntityRouteLink
+                        type="organization"
+                        id={event.organizationId}
+                        label={event.organizationId}
+                        variant="body2"
+                      />
                     </Typography>
                   )}
                 </Box>
               </Stack>
             </Box>
           </Box>
+
+          {event.linkedEntities && event.linkedEntities.length > 0 && (
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                textTransform="uppercase"
+                fontWeight={700}
+              >
+                Linked Investigation Context
+              </Typography>
+              <Stack spacing={1.5} mt={1}>
+                {event.linkedEntities.map((entity) => (
+                  <Box
+                    key={`${entity.type}-${entity.id}`}
+                    sx={{
+                      p: 1.5,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      spacing={1}
+                    >
+                      <Box>
+                        <EntityRouteLink
+                          type={entity.type}
+                          id={entity.id}
+                          label={entity.label}
+                          variant="body2"
+                        />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          {entity.context}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={entityTypeLabel(entity.type)}
+                        size="small"
+                        sx={{ textTransform: "capitalize" }}
+                      />
+                    </Stack>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          )}
 
           {/* Temporal Data */}
           <Box>

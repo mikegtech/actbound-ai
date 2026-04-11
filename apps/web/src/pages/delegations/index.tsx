@@ -183,7 +183,7 @@ const Delegations = () => {
         <CustomTabPanel value={tabIndex} index={1}>
           {accountsError && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              Failed to load connected account integration health.
+              Failed to load Connected Account health.
             </Alert>
           )}
           {accountsLoading ? (
@@ -206,7 +206,7 @@ const Delegations = () => {
                     borderRadius={2}
                   >
                     <Typography variant="body1" color="text.secondary">
-                      No connected integrations mapped to the target boundary.
+                      No Connected Accounts mapped to the target boundary.
                     </Typography>
                   </Box>
                 </Grid>

@@ -1,4 +1,13 @@
+import type { ActBoundEntityType } from "components/common/EntityRouteLink";
+
 export type AuditActionSignal = "allowed" | "denied" | "warning" | "reviewed";
+
+export interface AuditLinkedEntity {
+  type: ActBoundEntityType;
+  id: string;
+  label: string;
+  context: string;
+}
 
 export interface AuditEventDto {
   id: string;
@@ -19,8 +28,10 @@ export interface AuditEventDto {
     type: string;
     id: string;
     displayName: string;
+    routeType?: ActBoundEntityType;
   };
   organizationId?: string;
+  linkedEntities?: AuditLinkedEntity[];
   decision: {
     signal: AuditActionSignal;
     reasons?: Array<{ code: string; message: string }>;

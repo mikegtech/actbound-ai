@@ -12,6 +12,12 @@ export interface RiskIndicator {
   sourceType: "assistant" | "connected_account" | "delegation";
   sourceId: string;
   sourceName: string;
+  relatedAssistantId?: string;
+  relatedDelegationId?: string;
+  relatedPolicyId?: string;
+  relatedResourceId?: string;
+  relatedOrganizationId?: string;
+  auditEventId?: string;
   severity: "low" | "medium" | "high";
   description: string;
   detectedAt: number;
@@ -21,8 +27,14 @@ export interface DeniedPolicySnapshot {
   id: string;
   policyId: string;
   policyName: string;
+  assistantId: string;
   assistantName: string;
+  resourceId: string;
+  resourceName: string;
   resourceType: string;
+  organizationId?: string;
+  delegationId?: string;
+  auditEventId?: string;
   actionAttempted: string;
   deniedAt: number;
 }

@@ -22,7 +22,7 @@ const MOCK_ORGS: Organization[] = [
     assistantCount: 1,
     resourceCount: 1,
     status: "active",
-    description: "Defense and aerospace contractor integrations node.",
+    description: "Defense and aerospace contractor trust boundary.",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 180).toISOString(),
   },
   {
