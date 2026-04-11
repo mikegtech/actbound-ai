@@ -96,7 +96,9 @@ const Organizations = () => {
         <Stack direction="row" spacing={2}>
           <UnavailableAction
             variant="outlined"
+            actionKind="review"
             reason="Organization filtering facets are not wired to the frontend mock yet."
+            futureCapability="This will eventually filter organizations by status, health, resource coverage, and trust-boundary posture."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
@@ -105,7 +107,9 @@ const Organizations = () => {
           </UnavailableAction>
           <UnavailableAction
             variant="contained"
+            actionKind="create"
             reason="Organization creation is disabled until the create flow exists."
+            futureCapability="This will eventually open a validated organization creation workflow backed by gateway mutation support."
             startIcon={
               <IconifyIcon icon="material-symbols:domain-add-rounded" />
             }
@@ -172,7 +176,9 @@ const Organizations = () => {
               <UnavailableAction
                 size="small"
                 variant="text"
+                actionKind="review"
                 reason="Detailed organization posture export is not implemented yet."
+                futureCapability="This will eventually export a generated organization posture report from gateway-backed review data."
                 endIcon={
                   <IconifyIcon icon="material-symbols:download-rounded" />
                 }

@@ -111,7 +111,9 @@ const DelegationDetail = ({ id }: DelegationDetailProps) => {
         <UnavailableAction
           variant="outlined"
           color="error"
+          actionKind="destructive"
           reason="Delegation revocation is disabled until a safe mutation flow exists."
+          futureCapability="This will eventually require confirmation, authorization, gateway revocation handling, and audit evidence before changing the delegation state."
           startIcon={<IconifyIcon icon="material-symbols:block-rounded" />}
         >
           Revoke Delegation
@@ -210,7 +212,9 @@ const DelegationDetail = ({ id }: DelegationDetailProps) => {
                   <UnavailableAction
                     variant="outlined"
                     size="small"
+                    actionKind="security"
                     reason="Connection management is not implemented in the frontend mock yet."
+                    futureCapability="This will eventually manage the Connected Account through a controlled Trust Core flow without bypassing delegation boundaries."
                   >
                     Manage Connection
                   </UnavailableAction>

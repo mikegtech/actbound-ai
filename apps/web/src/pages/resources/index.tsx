@@ -187,7 +187,9 @@ const Resources = () => {
         <Stack direction="row" spacing={2}>
           <UnavailableAction
             variant="outlined"
+            actionKind="review"
             reason="Resource filtering facets are not wired to the frontend mock yet."
+            futureCapability="This will eventually filter resources by sensitivity, owner, category, audit posture, and assistant access paths."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
@@ -269,7 +271,9 @@ const Resources = () => {
                   size="small"
                   variant="text"
                   color="warning"
+                  actionKind="review"
                   reason="Resource access review actions are not implemented yet."
+                  futureCapability="This will eventually review resource access paths against policy, delegation, audit, and security evidence."
                   endIcon={
                     <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
                   }

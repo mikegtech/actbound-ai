@@ -463,6 +463,19 @@ Completed in this sprint:
 - added list-level audit/security links for delegation detail evidence IDs where dedicated audit-event or security-signal routes do not exist
 - normalized Connected Account terminology across Trust Core, Settings, and Security copy
 
+## Production Follow-Up Triage Sprint 4
+
+Completed in this sprint:
+
+- added a reusable frontend-only prepared mutation action dialog for gated create, configure, review, security, and destructive actions
+- updated the existing unavailable-action wrapper to use the prepared mutation dialog instead of leaving mutation-looking controls as silent inert buttons
+- applied explicit action semantics to assistant create/edit/restrict, rule configuration, and threshold review controls
+- applied explicit action semantics to Connected Account management, delegation revocation, security rotation, and security revocation controls
+- applied explicit action semantics to settings Save Identifiers, Toggle Default, Manage Connected Accounts, and Revoke All Sessions controls
+- applied explicit action semantics to policy create/edit/history/review controls and organization/resource review/configuration placeholders
+- kept all prepared actions frontend-only: no mutation hooks, persistence, success toasts, or fake state transitions were added
+- identified the prepared mutation action dialog as a candidate for later `@actbound/ui` promotion once other apps need the same gated-action pattern
+
 ---
 
 ## Current Status Summary
@@ -485,7 +498,7 @@ Completed in this sprint:
 
 ### In progress / just executed
 
-- Audit/security coherence sprint executed; remaining work is tracked as follow-up below
+- Safe mutation preparation sprint executed; remaining work is tracked as follow-up below
 
 ### Remaining
 
@@ -511,7 +524,7 @@ Need to complete:
 
 Need to complete:
 
-- implement assistant filters, creation, editing, restriction, rule configuration, and threshold review when those flows are in scope
+- wire prepared assistant filters, creation, editing, restriction, rule configuration, and threshold review actions to real gateway-backed workflows when those flows are in scope
 - replace frontend-only assistant boundary summaries with gateway-backed data when contracts exist
 - replace list-level audit/security links with event- or signal-specific routes when those route patterns exist
 
@@ -520,20 +533,20 @@ Need to complete:
 Need to complete:
 
 - replace placeholder relationship summaries with linked assistants, resources, delegations, policies, audit, and security context
-- implement organization/resource filters, export, settings, access review, attached-policy, audit-history, and review-action flows when they are in scope
+- wire prepared organization/resource filters, export, settings, access review, attached-policy, audit-history, and review-action controls to real query or mutation flows when they are in scope
 
 ### Phase 4 — Policies follow-up
 
 Need to complete:
 
 - replace fixed recent-change and hierarchy narratives with typed mock records
-- implement policy filters, creation, editing, history, metric review, and other visible policy actions when those flows are in scope
+- wire prepared policy filters, creation, editing, history, metric review, and other visible policy actions to real query or mutation flows when those flows are in scope
 
 ### Phase 5 — Delegations + Connected Accounts follow-up
 
 Need to complete:
 
-- implement Manage Connection and any future grant/revoke actions through safe mutation flows
+- wire prepared Manage Connection and grant/revoke actions to gateway-backed mutation flows with authorization and audit evidence
 - add connected-account detail or management routes if those become product scope
 - deepen audit/security cross-links beyond list-level navigation once source detail routes or filters exist
 - replace frontend-only relationship summaries with gateway-backed data when contracts exist
@@ -545,7 +558,7 @@ Need to complete:
 - replace frontend-only control and posture summaries with gateway-backed data when contracts exist
 - add direct Connected Account detail navigation if that route becomes product scope; current cards link through related Trust Core delegation boundaries
 - replace list-level audit navigation with audit-event deep links or filters when the audit route supports them
-- implement safe security-control mutations such as rotation and revocation when those flows are in scope
+- wire prepared security-control mutations such as rotation and revocation to real gateway-backed flows when those flows are in scope
 
 ### Phase 7 — Audit follow-up
 
@@ -561,7 +574,7 @@ Need to complete:
 
 Need to complete:
 
-- implement safe mutation flows for Save Identifiers, Toggle Default, Revoke All Sessions, and other mutation-looking controls
+- wire prepared Save Identifiers, Toggle Default, Manage Connected Accounts, Revoke All Sessions, and other mutation-looking controls to real gateway-backed settings/auth flows when those flows are in scope
 - replace frontend-only settings and integration snapshots with gateway-backed data when contracts exist
 - complete the final cross-route consistency and template-residue pass
 
@@ -574,6 +587,7 @@ Need to complete:
 - The frontend should remain easy to swap from mock data to gateway-backed query hooks later.
 - Shared package consolidation is allowed as a future refinement topic, but large shared-package refactors are not a priority during these phased UI builds.
 - Security and audit surfaces must become increasingly explicit as phases advance.
+- The prepared mutation action dialog is currently app-local; promote it to `@actbound/ui` later if multiple apps need the same gated-action pattern.
 
 ---
 

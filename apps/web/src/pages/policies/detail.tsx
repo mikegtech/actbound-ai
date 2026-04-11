@@ -86,14 +86,18 @@ const PolicyDetail = ({ id }: PolicyDetailProps) => {
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
         <UnavailableAction
           variant="contained"
+          actionKind="configure"
           reason="Policy editing is disabled until the policy authoring flow exists."
+          futureCapability="This will eventually open a validated policy edit workflow with gateway-backed persistence and review evidence."
           startIcon={<IconifyIcon icon="material-symbols:edit-rounded" />}
         >
           Edit Policy
         </UnavailableAction>
         <UnavailableAction
           variant="outlined"
+          actionKind="review"
           reason="Policy version history is not wired to mock records yet."
+          futureCapability="This will eventually navigate policy version records and audit evidence without changing policy state."
           startIcon={<IconifyIcon icon="material-symbols:history-rounded" />}
         >
           History

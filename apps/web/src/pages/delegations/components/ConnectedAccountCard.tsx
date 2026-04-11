@@ -164,7 +164,9 @@ export const ConnectedAccountCard = ({ account }: Props) => {
           variant="text"
           size="small"
           color="primary"
+          actionKind="security"
           reason="Connection management is not implemented in the frontend mock yet."
+          futureCapability="This will eventually open a controlled Connected Account management flow with authorization checks and audit evidence."
         >
           Manage Connection
         </UnavailableAction>

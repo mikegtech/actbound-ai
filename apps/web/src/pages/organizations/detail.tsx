@@ -65,7 +65,9 @@ const OrganizationDetail = ({ id }: OrganizationDetailProps) => {
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
         <UnavailableAction
           variant="outlined"
+          actionKind="configure"
           reason="Organization settings are read-only until the settings flow is wired."
+          futureCapability="This will eventually open controlled organization settings with gateway-backed persistence."
           startIcon={
             <IconifyIcon icon="material-symbols:settings-outline-rounded" />
           }
@@ -74,7 +76,9 @@ const OrganizationDetail = ({ id }: OrganizationDetailProps) => {
         </UnavailableAction>
         <UnavailableAction
           variant="outlined"
+          actionKind="review"
           reason="Organization access review is not wired to policy/audit data yet."
+          futureCapability="This will eventually review organization access paths using policy, delegation, resource, audit, and security evidence."
           startIcon={
             <IconifyIcon icon="material-symbols:shield-lock-outline-rounded" />
           }

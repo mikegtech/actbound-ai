@@ -1,26 +1,33 @@
-import { Button, Tooltip, type ButtonProps } from "@mui/material";
+import {
+  PreparedMutationAction,
+  type PreparedMutationKind,
+} from "./PreparedMutationAction";
+import type { ButtonProps } from "@mui/material";
 
 interface UnavailableActionProps extends Omit<ButtonProps, "disabled"> {
   reason?: string;
+  actionKind?: PreparedMutationKind;
+  futureCapability?: string;
+  dialogTitle?: string;
 }
 
 export const UnavailableAction = ({
   reason = "This action is not wired in the frontend mock yet.",
   children,
+  actionKind,
+  futureCapability,
+  dialogTitle,
   ...buttonProps
 }: UnavailableActionProps) => {
   return (
-    <Tooltip title={reason}>
-      <span
-        style={{
-          display: buttonProps.fullWidth ? "block" : "inline-flex",
-          width: buttonProps.fullWidth ? "100%" : undefined,
-        }}
-      >
-        <Button {...buttonProps} disabled>
-          {children}
-        </Button>
-      </span>
-    </Tooltip>
+    <PreparedMutationAction
+      {...buttonProps}
+      reason={reason}
+      actionKind={actionKind}
+      futureCapability={futureCapability}
+      dialogTitle={dialogTitle}
+    >
+      {children}
+    </PreparedMutationAction>
   );
 };

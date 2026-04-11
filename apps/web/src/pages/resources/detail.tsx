@@ -66,7 +66,9 @@ const ResourceDetail = ({ id }: ResourceDetailProps) => {
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
         <UnavailableAction
           variant="outlined"
+          actionKind="review"
           reason="Attached policy lookup is not wired to resource data yet."
+          futureCapability="This will eventually inspect policies attached to this resource without mutating resource state."
           startIcon={
             <IconifyIcon icon="material-symbols:policy-outline-rounded" />
           }
@@ -75,7 +77,9 @@ const ResourceDetail = ({ id }: ResourceDetailProps) => {
         </UnavailableAction>
         <UnavailableAction
           variant="outlined"
+          actionKind="review"
           reason="Resource-specific audit filtering is not implemented yet."
+          futureCapability="This will eventually open an audit view filtered to this resource and related assistant/delegation events."
           startIcon={<IconifyIcon icon="material-symbols:history-rounded" />}
         >
           Audit History

@@ -104,7 +104,9 @@ const Policies = () => {
         <Stack direction="row" spacing={2}>
           <UnavailableAction
             variant="outlined"
+            actionKind="review"
             reason="Policy filtering facets are not wired to the frontend mock yet."
+            futureCapability="This will eventually filter policies by status, scope, environment, owner, and evaluation posture."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
@@ -113,7 +115,9 @@ const Policies = () => {
           </UnavailableAction>
           <UnavailableAction
             variant="contained"
+            actionKind="create"
             reason="Policy creation is disabled until the policy authoring flow exists."
+            futureCapability="This will eventually open a validated policy authoring workflow backed by gateway mutation support."
             startIcon={<IconifyIcon icon="material-symbols:post-add-rounded" />}
           >
             New Policy

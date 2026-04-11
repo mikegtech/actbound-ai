@@ -62,7 +62,9 @@ export const SecurityInsightCard = ({
           size="small"
           variant="text"
           color="warning"
+          actionKind="review"
           reason="Policy metric review is not wired to mock data yet."
+          futureCapability="This will eventually review policy exposure metrics and link to supporting audit/security evidence."
           endIcon={
             <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
           }

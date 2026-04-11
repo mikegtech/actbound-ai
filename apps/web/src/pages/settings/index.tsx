@@ -205,7 +205,9 @@ const Settings = () => {
                   <UnavailableAction
                     variant="contained"
                     disableElevation
+                    actionKind="configure"
                     reason="Saving identifiers is disabled until profile persistence exists."
+                    futureCapability="This will eventually validate editable identity fields and persist them through a gateway-backed profile mutation."
                     sx={{ borderRadius: 2 }}
                   >
                     Save Identifiers
@@ -249,7 +251,9 @@ const Settings = () => {
                     variant="outlined"
                     color="primary"
                     size="small"
+                    actionKind="security"
                     reason="Default boundary changes are disabled until a safe settings mutation flow exists."
+                    futureCapability="This will eventually require confirmation and gateway-backed settings persistence before changing default trust-boundary behavior."
                   >
                     Toggle Default
                   </UnavailableAction>
@@ -352,7 +356,9 @@ const Settings = () => {
                     )}
                     <UnavailableAction
                       variant="outlined"
+                      actionKind="security"
                       reason="Connected Account management is read-only until mutation flows exist."
+                      futureCapability="This will eventually route to a controlled Connected Account management flow with authorization checks and audit evidence."
                     >
                       Manage Connected Accounts
                     </UnavailableAction>
@@ -422,7 +428,9 @@ const Settings = () => {
                     variant="contained"
                     color="error"
                     disableElevation
+                    actionKind="destructive"
                     reason="Session revocation is disabled until a safe auth mutation flow exists."
+                    futureCapability="This will eventually require explicit confirmation and gateway-backed auth revocation before terminating active sessions."
                   >
                     Revoke All Sessions
                   </UnavailableAction>

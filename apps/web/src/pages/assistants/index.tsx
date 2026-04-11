@@ -96,7 +96,9 @@ const Assistants = () => {
         <Stack direction="row" spacing={2}>
           <UnavailableAction
             variant="outlined"
+            actionKind="review"
             reason="Assistant filtering facets are not wired to the frontend mock yet."
+            futureCapability="This will eventually filter assistants by status, organization, capability scope, and trust-boundary posture."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
@@ -105,7 +107,9 @@ const Assistants = () => {
           </UnavailableAction>
           <UnavailableAction
             variant="contained"
+            actionKind="create"
             reason="Assistant creation is intentionally disabled until the create flow exists."
+            futureCapability="This will eventually open a validated assistant creation flow backed by the public API gateway."
             startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
           >
             New Assistant
@@ -154,7 +158,9 @@ const Assistants = () => {
               <UnavailableAction
                 size="small"
                 variant="text"
+                actionKind="configure"
                 reason="Rule configuration is not implemented in this frontend pass."
+                futureCapability="This will eventually configure assistant review rules through a safe policy-aware settings flow."
                 endIcon={
                   <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
                 }
@@ -171,7 +177,9 @@ const Assistants = () => {
               <UnavailableAction
                 size="small"
                 variant="text"
+                actionKind="review"
                 reason="Threshold review is not wired to mock policy/security data yet."
+                futureCapability="This will eventually review assistant thresholds against policy, audit, and security signals before any changes can be applied."
                 endIcon={
                   <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
                 }

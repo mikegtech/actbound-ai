@@ -143,7 +143,17 @@ const SecurityControls = () => {
                         ? "error"
                         : "primary"
                     }
+                    actionKind={
+                      control.actionLabel === "Revoke Delegation"
+                        ? "destructive"
+                        : "security"
+                    }
                     reason={control.actionReason}
+                    futureCapability={
+                      control.actionLabel === "Revoke Delegation"
+                        ? "This will eventually require confirmation, authorization, gateway revocation handling, and audit evidence before changing the delegation state."
+                        : "This will eventually rotate Connected Account credentials through a gateway-backed security mutation with audit evidence."
+                    }
                     startIcon={
                       <Icon
                         icon={

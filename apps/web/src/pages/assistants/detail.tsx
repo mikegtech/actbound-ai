@@ -172,7 +172,9 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
         <UnavailableAction
           variant="outlined"
+          actionKind="configure"
           reason="Assistant profile editing is not implemented in the frontend mock yet."
+          futureCapability="This will eventually open a validated edit flow for assistant identity metadata and profile fields."
           startIcon={
             <IconifyIcon icon="material-symbols:edit-document-outline-rounded" />
           }
@@ -182,7 +184,9 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
         <UnavailableAction
           variant="outlined"
           color="error"
+          actionKind="destructive"
           reason="Restriction changes are disabled until a safe mutation flow exists."
+          futureCapability="This will eventually require confirmation, authorization, audit evidence, and gateway mutation handling before restricting an assistant."
           startIcon={<IconifyIcon icon="material-symbols:block-rounded" />}
         >
           Restrict
