@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Button,
   Stack,
   TextField,
   InputAdornment,
@@ -18,8 +17,13 @@ import {
   EmptyState,
 } from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
+import { UnavailableAction } from "components/common/UnavailableAction";
+import { useState } from "react";
+
+const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
 const Resources = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const {
     data: resources,
     isLoading,
@@ -33,7 +37,7 @@ const Resources = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Resources Directory"
-          subtitle="Centralized management of documents, APIs, servers, and virtual assets."
+          subtitle="Review protected resources, sensitivity, ownership, and assistant access paths."
         />
         <LoadingState />
       </Box>
@@ -45,18 +49,44 @@ const Resources = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Resources Directory"
-          subtitle="Centralized management of documents, APIs, servers, and virtual assets."
+          subtitle="Review protected resources, sensitivity, ownership, and assistant access paths."
         />
         <ErrorState error={error as Error} onRetry={refetch} />
       </Box>
     );
   }
 
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredResources = normalizedSearchTerm
+    ? resources.filter((resource) =>
+        [
+          resource.name,
+          resource.id,
+          resource.category,
+          resource.sensitivity,
+          resource.organizationId,
+          resource.organizationName,
+        ].some((value) => value.toLowerCase().includes(normalizedSearchTerm)),
+      )
+    : resources;
+
+  const highSensitivityCount = resources.filter((resource) =>
+    ["critical", "high"].includes(resource.sensitivity),
+  ).length;
+  const accessPathCount = resources.reduce(
+    (total, resource) => total + resource.assistantAccessCount,
+    0,
+  );
+  const recentlyAuditedCount = resources.filter(
+    (resource) =>
+      Date.now() - new Date(resource.lastAuditedAt).getTime() <= sevenDaysMs,
+  ).length;
+
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <PageHeader
         title="Resources Directory"
-        subtitle="Centralized management of documents, APIs, servers, and virtual assets."
+        subtitle="Review protected resources, sensitivity, ownership, and assistant access paths."
       />
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -71,10 +101,10 @@ const Resources = () => {
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              1,248
+              {resources.length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Total Assets
+              Total Resources
             </Typography>
           </Paper>
         </Grid>
@@ -89,10 +119,10 @@ const Resources = () => {
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              84
+              {highSensitivityCount}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              High Sensitivity
+              High/Critical Sensitivity
             </Typography>
           </Paper>
         </Grid>
@@ -107,10 +137,10 @@ const Resources = () => {
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              99.8%
+              {accessPathCount}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Access Integrity
+              Assistant Access Paths
             </Typography>
           </Paper>
         </Grid>
@@ -119,20 +149,16 @@ const Resources = () => {
             sx={{
               p: 3,
               border: "1px solid",
-              borderColor: "error.main",
-              bgcolor: "error.lighter",
+              borderColor: "divider",
               borderRadius: 2,
               boxShadow: "none",
             }}
           >
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 600, color: "error.main" }}
-            >
-              14
+            <Typography variant="h4" sx={{ fontWeight: 600 }}>
+              {recentlyAuditedCount}
             </Typography>
-            <Typography variant="body2" sx={{ color: "error.main" }}>
-              Policy Violations
+            <Typography variant="body2" color="text.secondary">
+              Audited This Week
             </Typography>
           </Paper>
         </Grid>
@@ -146,6 +172,8 @@ const Resources = () => {
       >
         <TextField
           placeholder="Search resources..."
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
           size="small"
           sx={{ width: { xs: "100%", md: 400 } }}
           InputProps={{
@@ -157,28 +185,33 @@ const Resources = () => {
           }}
         />
         <Stack direction="row" spacing={2}>
-          <Button
+          <UnavailableAction
             variant="outlined"
+            reason="Resource filtering facets are not wired to the frontend mock yet."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
           >
             Filter
-          </Button>
+          </UnavailableAction>
         </Stack>
       </Stack>
 
       <Grid container spacing={3} sx={{ mb: 6 }}>
         <Grid size={{ xs: 12, lg: 9 }}>
           <SectionWrapper title="Protected Assets">
-            {resources.length === 0 ? (
+            {filteredResources.length === 0 ? (
               <EmptyState
                 title="No Resources Found"
-                description="There are no protected resources mapped in the system."
+                description={
+                  normalizedSearchTerm
+                    ? "No resources match the current search."
+                    : "There are no protected resources mapped in the system."
+                }
               />
             ) : (
               <Grid container spacing={3}>
-                {resources.map((resource) => (
+                {filteredResources.map((resource) => (
                   <Grid size={{ xs: 12, md: 6, xl: 4 }} key={resource.id}>
                     <ResourceCard resource={resource} />
                   </Grid>
@@ -189,7 +222,8 @@ const Resources = () => {
               variant="body2"
               sx={{ mt: 3, color: "text.secondary", textAlign: "center" }}
             >
-              Showing {resources.length} of 1,248 parameters
+              Showing {filteredResources.length} of {resources.length} protected
+              resources
             </Typography>
           </SectionWrapper>
         </Grid>
@@ -228,19 +262,20 @@ const Resources = () => {
                   variant="body2"
                   sx={{ mb: 1, color: "warning.dark" }}
                 >
-                  System has detected 3 APIs with excessive permissions. We
-                  recommend revoking access for legacy organizational units.
+                  This static recommendation will become actionable once policy
+                  and resource access review data are connected.
                 </Typography>
-                <Button
+                <UnavailableAction
                   size="small"
                   variant="text"
                   color="warning"
+                  reason="Resource access review actions are not implemented yet."
                   endIcon={
                     <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
                   }
                 >
                   Review Actions
-                </Button>
+                </UnavailableAction>
               </Paper>
             </SectionWrapper>
           </Stack>

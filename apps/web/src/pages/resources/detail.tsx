@@ -1,4 +1,5 @@
-import { Box, Typography, Button, Stack, Divider, Grid } from "@mui/material";
+import { Box, Typography, Stack, Divider, Grid } from "@mui/material";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { PageHeader } from "components/common/PageHeader";
 import { SectionWrapper } from "components/common/SectionWrapper";
 import { useResourceDetail } from "./api/useResourceQueries";
@@ -6,6 +7,7 @@ import { ResourceSensitivityBadge } from "./components/ResourceSensitivityBadge"
 import { LoadingState, ErrorState } from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
 import dayjs from "dayjs";
+import { UnavailableAction } from "components/common/UnavailableAction";
 
 interface ResourceDetailProps {
   id: string;
@@ -26,7 +28,7 @@ const ResourceDetail = ({ id }: ResourceDetailProps) => {
         <PageHeader
           title="Loading..."
           breadcrumbs={[
-            { label: "Resources", href: "/resources" },
+            { label: "Resources", to: "/resources" },
             { label: "Detail" },
           ]}
         />
@@ -41,7 +43,7 @@ const ResourceDetail = ({ id }: ResourceDetailProps) => {
         <PageHeader
           title="Error"
           breadcrumbs={[
-            { label: "Resources", href: "/resources" },
+            { label: "Resources", to: "/resources" },
             { label: "Detail" },
           ]}
         />
@@ -56,26 +58,28 @@ const ResourceDetail = ({ id }: ResourceDetailProps) => {
         title={resource.name}
         subtitle={resource.description}
         breadcrumbs={[
-          { label: "Resources", href: "/resources" },
+          { label: "Resources", to: "/resources" },
           { label: resource.name },
         ]}
       />
 
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
-        <Button
+        <UnavailableAction
           variant="outlined"
+          reason="Attached policy lookup is not wired to resource data yet."
           startIcon={
             <IconifyIcon icon="material-symbols:policy-outline-rounded" />
           }
         >
           View Attached Policies
-        </Button>
-        <Button
+        </UnavailableAction>
+        <UnavailableAction
           variant="outlined"
+          reason="Resource-specific audit filtering is not implemented yet."
           startIcon={<IconifyIcon icon="material-symbols:history-rounded" />}
         >
           Audit History
-        </Button>
+        </UnavailableAction>
       </Stack>
 
       <Grid container spacing={4}>
@@ -108,10 +112,18 @@ const ResourceDetail = ({ id }: ResourceDetailProps) => {
                 <Divider />
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Delegation Parent
+                    Owning Organization
                   </Typography>
                   <Typography variant="body1">
-                    {resource.organizationId}
+                    <RouterLink
+                      to="/organizations/$organizationId"
+                      params={{ organizationId: resource.organizationId }}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <Typography component="span" color="primary">
+                        {resource.organizationName}
+                      </Typography>
+                    </RouterLink>
                   </Typography>
                 </Box>
                 <Divider />
@@ -165,7 +177,8 @@ const ResourceDetail = ({ id }: ResourceDetailProps) => {
                   color="text.secondary"
                   sx={{ textAlign: "center" }}
                 >
-                  Assistants actively scoped to read or mutate this resource.
+                  Mock binding count only. Linked assistants will appear once
+                  relationship data is wired.
                 </Typography>
               </Box>
             </SectionWrapper>

@@ -5,13 +5,13 @@ import {
   Divider,
   Stack,
   Typography,
-  Button,
 } from "@mui/material";
 import { ConnectedAccount } from "../types";
 import { ConnectionStateBadge } from "./ConnectionStateBadge";
 import IconifyIcon from "components/base/IconifyIcon";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { UnavailableAction } from "components/common/UnavailableAction";
 
 dayjs.extend(relativeTime);
 
@@ -133,9 +133,14 @@ export const ConnectedAccountCard = ({ account }: Props) => {
       </CardContent>
       <Divider />
       <Box sx={{ p: 1.5, textAlign: "center", bgcolor: "transparent" }}>
-        <Button variant="text" size="small" color="primary">
+        <UnavailableAction
+          variant="text"
+          size="small"
+          color="primary"
+          reason="Connection management is not implemented in the frontend mock yet."
+        >
           Manage Connection
-        </Button>
+        </UnavailableAction>
       </Box>
     </Card>
   );

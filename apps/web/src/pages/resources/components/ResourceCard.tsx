@@ -1,18 +1,10 @@
-import {
-  Box,
-  Paper,
-  Typography,
-  Stack,
-  Button,
-  Divider,
-  Chip,
-} from "@mui/material";
+import { Box, Paper, Typography, Stack, Button, Divider } from "@mui/material";
 import { Resource } from "../types";
 import { ResourceSensitivityBadge } from "./ResourceSensitivityBadge";
 import IconifyIcon from "components/base/IconifyIcon";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Link } from "@tanstack/react-router";
+import { Link as RouterLink } from "@tanstack/react-router";
 
 dayjs.extend(relativeTime);
 
@@ -69,12 +61,15 @@ export const ResourceCard = ({ resource }: Props) => {
           <Typography variant="caption" color="text.secondary">
             Owner
           </Typography>
-          <Chip
-            label={resource.organizationId}
-            size="small"
-            variant="outlined"
-            sx={{ height: 20, fontSize: "0.7rem" }}
-          />
+          <RouterLink
+            to="/organizations/$organizationId"
+            params={{ organizationId: resource.organizationId }}
+            style={{ textDecoration: "none" }}
+          >
+            <Typography component="span" variant="caption" color="primary">
+              {resource.organizationName}
+            </Typography>
+          </RouterLink>
         </Box>
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography variant="caption" color="text.secondary">
@@ -96,19 +91,22 @@ export const ResourceCard = ({ resource }: Props) => {
 
       <Divider sx={{ mb: 2, mx: -3 }} />
 
-      <Button
-        component={Link}
+      <RouterLink
         to="/resources/$resourceId"
         params={{ resourceId: resource.id }}
-        fullWidth
-        variant="text"
-        color="secondary"
-        endIcon={
-          <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
-        }
+        style={{ textDecoration: "none" }}
       >
-        View Protections
-      </Button>
+        <Button
+          fullWidth
+          variant="text"
+          color="secondary"
+          endIcon={
+            <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
+          }
+        >
+          View Protections
+        </Button>
+      </RouterLink>
     </Paper>
   );
 };

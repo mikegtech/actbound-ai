@@ -248,9 +248,6 @@ Outcome:
 
 Still needs completion:
 
-- rename `apps/web` to the expected workspace package identity so root `pnpm --filter @actbound/web ...` workflows resolve correctly
-- replace the `/` starter route with an ActBound landing/default dashboard experience
-- remove template auth sitemap/path entries that do not map to the active router
 - remove remaining template residue in app docs, settings labels, sample credentials, and starter-specific copy/assets
 
 ### Phase 1 — Shell refinement + dashboard foundation
@@ -270,14 +267,11 @@ Outcome:
 
 Still needs completion:
 
-- make the dashboard the actual default authenticated landing experience rather than an alternate route behind `/dashboard`
-- add direct dashboard navigation/actions into core product domains so the landing view behaves like a control plane entry point
-- make shared breadcrumb/page-level navigation router-aware so in-app transitions stay inside the SPA shell
-- tighten dashboard copy and summary framing where it still reads as generic dashboard content instead of ActBound-specific control-plane guidance
+- review dashboard summary blocks again when gateway-backed metrics replace frontend mock data
 
 ### Phase 2 — Assistants
 
-Completed.
+In progress.
 
 Summary:
 
@@ -288,11 +282,16 @@ Summary:
 
 Outcome:
 
-- assistants are now a real product surface instead of placeholders
+- assistants are now a real product surface instead of placeholders, but visible controls and boundary semantics still need a completion pass
+
+Still needs completion:
+
+- make assistant filters, creation, editing, restriction, rules, and thresholds functional when those flows are in scope
+- make assistant detail pages show clearer trust-boundary relationships to resources, delegations, policies, and audit/security signals
 
 ### Phase 3 — Organizations + Resources
 
-Completed.
+Implemented, but follow-up required.
 
 Summary:
 
@@ -303,11 +302,16 @@ Summary:
 
 Outcome:
 
-- organizations and resources now function as visible trust boundaries in the UI
+- organizations and resources now function as visible trust boundaries in the UI, but several metrics, relationships, and actions are still placeholder-level
+
+Still needs completion:
+
+- replace count-only or empty relationship blocks with linked assistants, resources, delegations, policies, audit, and security context
+- make organization/resource filters, export, settings, access review, attached policies, audit history, and review actions functional when those flows are in scope
 
 ### Phase 4 — Policies
 
-Completed.
+Implemented, but follow-up required.
 
 Summary:
 
@@ -318,20 +322,118 @@ Summary:
 
 Outcome:
 
-- the authorization model is now represented in the UI beyond simple summaries
+- the authorization model is now represented in the UI beyond simple summaries, but simulation correctness, policy logic, and visible actions need a completion pass
+
+Still needs completion:
+
+- make recent changes and policy hierarchy data real mock records instead of fixed narrative content
+- make policy filters, creation, editing, history, and metric review functional when those flows are in scope
 
 ### Phase 5 — Delegations + Connected Accounts
 
-Ready / in progress depending on latest Codex completion status.
+In progress.
 
-Expected scope:
+Summary:
 
-- delegations index
-- delegation detail or expandable detail pattern
-- connected accounts coverage
-- delegation/account-specific summaries and status semantics
+- delegations index implemented with active delegation and connected account tabs
+- typed mock delegation and connected account data introduced
+- delegation and connection status badges implemented
+- loading, empty, and error states are present for the tabbed surfaces
 
-If Codex has completed this phase successfully, treat it as complete and update the status lines below accordingly.
+Outcome:
+
+- the Trust Core surface exists, but delegation detail, connection management, and cross-entity relationship depth remain incomplete
+
+Still needs completion:
+
+- implement a delegation detail route or expandable detail pattern
+- implement Manage Connection and any future grant/revoke actions through safe mutation flows
+- connect delegation and connected-account records to real assistant, organization, policy, resource, audit, and security mock IDs
+- add an aggregate status/attention summary so the page communicates delegation risk and account health at a glance
+- align connected account and delegation terminology with the rest of the app so Trust Core, delegations, integrations, and security controls read as one model
+
+### Phase 6 — Security
+
+In progress.
+
+Summary:
+
+- security dashboard route implemented
+- My Controls route implemented
+- posture, risk, and denied-policy snapshot cards introduced
+- token/account/delegation risk concepts are visible in the UI
+
+Outcome:
+
+- security is now a navigable product surface, but it is still a static/mock shell with incomplete safety affordances
+
+Still needs completion:
+
+- derive My Controls content from typed mock/query data instead of fixed copy
+- link risk and denial cards back to the source assistant, connected account, delegation, policy, resource, or audit event
+- reconcile the controls route/copy with the broader security, delegation, and connected-account model
+
+### Phase 7 — Audit
+
+Implemented, but follow-up required.
+
+Summary:
+
+- audit index route implemented
+- typed mock audit event records introduced
+- clickable audit table implemented
+- event inspection drawer implemented with decision reasons and metadata
+
+Outcome:
+
+- audit exploration has a usable foundation, but event linkage and investigation depth still need refinement
+
+Still needs completion:
+
+- add actor, signal, event type, resource, and time filters once the mock event count grows beyond the current fixed table
+- populate organization, assistant, delegation, policy, and resource identifiers consistently so audit events can link back to source pages
+- expand decision context beyond generic metadata so policy evaluation reasons explain what happened and why
+- add pagination or a deliberate fixed-window model before audit data grows
+- review raw metadata rendering for sensitive fields before wiring real event payloads
+
+### Phase 8 — Settings + polish
+
+In progress.
+
+Summary:
+
+- settings route implemented
+- tabbed settings foundation introduced
+- identity, defaults, integrations, and security/auth panels are visible
+
+Outcome:
+
+- settings has a page shell, but most controls are static placeholders and the route still needs a polish pass
+
+Still needs completion:
+
+- convert profile fields and settings controls to typed mock/query-backed state or disable them as placeholders
+- implement safe mutation flows for Save Identifiers, Toggle Default, Revoke All Sessions, and other settings actions
+- align integration settings with connected-account data beyond read-only explanatory copy
+- improve responsive behavior for the vertical tab layout on mobile widths
+- run the final cross-route polish pass for headers, empty/loading/error states, spacing, navigation, and remaining template residue
+
+---
+
+## Production Follow-Up Triage Sprint 1
+
+Completed in this sprint:
+
+- confirmed `apps/web` already uses the `@actbound/web` package identity
+- kept `/` routed to the dashboard and protected the main shell so unauthenticated users enter through login
+- kept dashboard route-linked actions as the landing entry points into assistants, policies, resources, delegations, security, and audit
+- added functional frontend search to assistant, organization, resource, and policy list pages
+- replaced silent no-op mutation-looking controls with disabled, explained affordances across assistants, organizations, resources, policies, delegations, security controls, and settings
+- made policy simulation traces policy-specific and blocked missing/mismatched traces with an honest empty state
+- populated policy logic from typed frontend policy conditions using the existing SDK `PolicyCondition` type
+- derived resource summary metrics from the resource mock data instead of hardcoded contradictory totals
+- normalized resource organization ownership to stable IDs/names and linked resource owners to organization detail routes
+- fixed frontend TypeScript issues found during the sprint so `@actbound/web` now passes `tsc --noEmit`
 
 ---
 
@@ -339,24 +441,26 @@ If Codex has completed this phase successfully, treat it as complete and update 
 
 ### Complete
 
-- Phase 2 — assistants
-- Phase 3 — organizations + resources
-- Phase 4 — policies
+- None currently reviewed as complete with no follow-up
 
 ### Complete with follow-up required
 
 - Phase 0 — UI hardening
 - Phase 1 — shell refinement + dashboard foundation
+- Phase 3 — organizations + resources
+- Phase 4 — policies
+- Phase 7 — audit
 
 ### In progress / just executed
 
+- Phase 2 — assistants
 - Phase 5 — delegations + connected accounts
+- Phase 6 — security
+- Phase 8 — settings + polish
 
 ### Remaining
 
-- Phase 6 — security
-- Phase 7 — audit
-- Phase 8 — settings + polish
+- None
 
 ---
 
@@ -366,54 +470,72 @@ If Codex has completed this phase successfully, treat it as complete and update 
 
 Need to complete:
 
-- rename `apps/web` from `vite-ts-starter` to the intended workspace package identity so monorepo root scripts work again
-- retire the current starter page at `/` and route authenticated users into a real ActBound landing surface
-- remove stale auth/template sitemap and path entries that are not backed by live routes
 - finish template cleanup in `apps/web` docs, config labels, sample credentials, translations, and unused starter references
 
 ### Phase 1 — Shell refinement + dashboard foundation follow-up
 
 Need to complete:
 
-- make the dashboard the default entry surface for authenticated users
-- add meaningful route-linked actions from the dashboard into assistants, policies, resources, delegations, security, and audit
-- update shared breadcrumb navigation to use router-aware links instead of full-page reload paths
-- run a copy/polish pass on the dashboard so the primary landing surface consistently reads as an ActBound control plane
-- review whether the current dashboard sections are the right phase-appropriate foundation versus carrying placeholder summary blocks forward unchanged
+- revisit dashboard summary blocks when real gateway-backed metrics replace frontend mock data
 
-### Phase 6 — Security
+### Phase 2 — Assistants follow-up
 
-Need to implement:
+Need to complete:
 
-- security dashboard
-- my security controls or equivalent user-facing security view
-- token/account/delegation risk or posture indicators
-- security-specific summary blocks
-- attention/health patterns
-- coherence with delegations, policies, and resources
+- implement assistant filters, creation, editing, restriction, rule configuration, and threshold review when those flows are in scope
+- strengthen assistant detail pages with linked boundary context for reachable resources, delegated accounts, governing policies, and relevant audit/security signals
 
-### Phase 7 — Audit
+### Phase 3 — Organizations + Resources follow-up
 
-Need to implement:
+Need to complete:
 
-- audit log index/overview
-- security events or activity exploration
-- timeline/event summary patterns
-- event detail or expandable event inspection
-- filters/search only if needed for a clean foundation
-- visible linkage back to assistants, delegations, policies, and resources
+- replace placeholder relationship summaries with linked assistants, resources, delegations, policies, audit, and security context
+- implement organization/resource filters, export, settings, access review, attached-policy, audit-history, and review-action flows when they are in scope
 
-### Phase 8 — Settings + polish
+### Phase 4 — Policies follow-up
 
-Need to implement:
+Need to complete:
 
-- settings foundation
-- route completeness review
-- consistency pass across headers, empty/loading/error states, spacing, and navigation
-- shared primitive cleanup opportunities
-- responsive cleanup
-- final template residue removal
-- prep for real API/data integration work
+- replace fixed recent-change and hierarchy narratives with typed mock records
+- implement policy filters, creation, editing, history, metric review, and other visible policy actions when those flows are in scope
+
+### Phase 5 — Delegations + Connected Accounts follow-up
+
+Need to complete:
+
+- implement delegation detail or expandable detail
+- implement Manage Connection and any future grant/revoke actions through safe mutation flows
+- link delegations and connected accounts to assistants, organizations, policies, resources, audit, and security data
+- add aggregate delegation/account posture summaries
+- align Trust Core, integration, delegation, and security-control language across pages
+
+### Phase 6 — Security follow-up
+
+Need to complete:
+
+- back My Controls with typed mock/query data instead of fixed copy
+- link risks and denials to source assistants, connected accounts, delegations, policies, resources, or audit events
+- reconcile security controls with delegation and connected-account state
+
+### Phase 7 — Audit follow-up
+
+Need to complete:
+
+- add filters/search/sorting once event volume requires it
+- populate source entity IDs consistently so events can link to assistants, delegations, policies, resources, organizations, and security findings
+- enrich decision reasons with policy evaluation context
+- add pagination or an explicit fixed-window model before expanding event data
+- review raw metadata rendering before connecting real audit payloads
+
+### Phase 8 — Settings + polish follow-up
+
+Need to complete:
+
+- make settings fields controlled and mock/query-backed, or disable them as placeholders
+- implement safe mutation flows for Save Identifiers, Toggle Default, Revoke All Sessions, and other mutation-looking controls
+- align the integrations panel with connected account data beyond read-only explanatory copy
+- improve mobile behavior for the vertical settings tabs
+- complete the final cross-route consistency and template-residue pass
 
 ---
 
@@ -476,13 +598,11 @@ Use Claude Code for:
 
 ## Recommended Next Steps
 
-1. Fix Phase 0 completion gaps
-2. Fix Phase 1 completion gaps
-3. Finish or confirm Phase 5 Delegations + Connected Accounts
-4. Implement Phase 6 Security
-5. Implement Phase 7 Audit
-6. Implement Phase 8 Settings + polish
-7. After those UI foundations are complete, plan a focused integration pass for real gateway-backed data flows
+1. Finish remaining template cleanup in app docs, config labels, sample credentials, translations, and unused starter references
+2. Add relationship depth across assistants, organizations, resources, delegations, policies, audit, and security findings
+3. Decide which disabled placeholder actions should become frontend-only mock flows before gateway integration
+4. Replace fixed recent-change, policy hierarchy, and My Controls narratives with typed mock records
+5. After those UI foundations are coherent, plan a focused integration pass for real gateway-backed data flows
 
 ---
 
@@ -502,9 +622,10 @@ These are valid later, but not current blockers:
 
 The next recommended prompt is:
 
-- **Phase 6 — Security**
+- **Relationship-depth and typed mock data linkage triage**
 
-After Security, continue with:
+Start with:
 
-- Phase 7 — Audit
-- Phase 8 — Settings + polish
+- assistant, resource, delegation, policy, audit, and security cross-links
+- delegation detail or expandable detail
+- typed mock records for policy history, policy hierarchy, and My Controls

@@ -1,5 +1,6 @@
 import { Paper, Typography, Button } from "@mui/material";
 import IconifyIcon from "components/base/IconifyIcon";
+import { UnavailableAction } from "components/common/UnavailableAction";
 
 interface Props {
   title?: string;
@@ -43,7 +44,7 @@ export const SecurityInsightCard = ({
       >
         {message}
       </Typography>
-      {actionLabel && (
+      {actionLabel && onAction && (
         <Button
           size="small"
           variant="text"
@@ -55,6 +56,19 @@ export const SecurityInsightCard = ({
         >
           {actionLabel}
         </Button>
+      )}
+      {actionLabel && !onAction && (
+        <UnavailableAction
+          size="small"
+          variant="text"
+          color="warning"
+          reason="Policy metric review is not wired to mock data yet."
+          endIcon={
+            <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
+          }
+        >
+          {actionLabel}
+        </UnavailableAction>
       )}
     </Paper>
   );

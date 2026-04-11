@@ -1,12 +1,5 @@
-import {
-  Box,
-  Typography,
-  Button,
-  Stack,
-  Divider,
-  Paper,
-  Grid,
-} from "@mui/material";
+import { Box, Typography, Stack, Divider, Paper, Grid } from "@mui/material";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { PageHeader } from "components/common/PageHeader";
 import { SectionWrapper } from "components/common/SectionWrapper";
 import { useAssistantDetail } from "./api/useAssistantQueries";
@@ -15,6 +8,7 @@ import { CapabilitySummarySection } from "./components/CapabilitySummarySection"
 import { LoadingState, ErrorState } from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
 import dayjs from "dayjs";
+import { UnavailableAction } from "components/common/UnavailableAction";
 
 interface AssistantDetailProps {
   id: string;
@@ -35,7 +29,7 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
         <PageHeader
           title="Loading..."
           breadcrumbs={[
-            { label: "Assistants", href: "/assistants" },
+            { label: "Assistants", to: "/assistants" },
             { label: "Detail" },
           ]}
         />
@@ -50,7 +44,7 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
         <PageHeader
           title="Error"
           breadcrumbs={[
-            { label: "Assistants", href: "/assistants" },
+            { label: "Assistants", to: "/assistants" },
             { label: "Detail" },
           ]}
         />
@@ -65,27 +59,29 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
         title={assistant.name}
         subtitle={assistant.description}
         breadcrumbs={[
-          { label: "Assistants", href: "/assistants" },
+          { label: "Assistants", to: "/assistants" },
           { label: assistant.name },
         ]}
       />
 
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
-        <Button
+        <UnavailableAction
           variant="outlined"
+          reason="Assistant profile editing is not implemented in the frontend mock yet."
           startIcon={
             <IconifyIcon icon="material-symbols:edit-document-outline-rounded" />
           }
         >
           Edit Profile
-        </Button>
-        <Button
+        </UnavailableAction>
+        <UnavailableAction
           variant="outlined"
           color="error"
+          reason="Restriction changes are disabled until a safe mutation flow exists."
           startIcon={<IconifyIcon icon="material-symbols:block-rounded" />}
         >
           Restrict
-        </Button>
+        </UnavailableAction>
       </Stack>
 
       <Grid container spacing={4}>
@@ -116,7 +112,15 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
                     Organization
                   </Typography>
                   <Typography variant="body1">
-                    {assistant.organizationId}
+                    <RouterLink
+                      to="/organizations/$organizationId"
+                      params={{ organizationId: assistant.organizationId }}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <Typography component="span" color="primary">
+                        {assistant.organizationId}
+                      </Typography>
+                    </RouterLink>
                   </Typography>
                 </Box>
                 <Divider />

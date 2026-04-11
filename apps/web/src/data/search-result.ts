@@ -1,6 +1,13 @@
 import { users } from "./users";
 
-export const files = [
+interface SearchFile {
+  name: string;
+  path: string;
+  icon?: string;
+  image?: string;
+}
+
+export const files: SearchFile[] = [
   {
     name: "assistant-policy-export.zip",
     path: ":: exports / actbound / governance /",

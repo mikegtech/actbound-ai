@@ -13,7 +13,7 @@ import type { SubMenuItem } from "routes/sitemap";
 import { useNavContext } from "../NavProvider";
 
 interface NavItemPopoverProps {
-  anchorEl: HTMLButtonElement | null;
+  anchorEl: HTMLElement | null;
   handleClose: () => void;
   open: boolean;
   items: SubMenuItem[];
@@ -27,9 +27,7 @@ const NavitemPopover = ({
   items,
   level,
 }: NavItemPopoverProps) => {
-  const [itemAnchorEl, setItemAnchorEl] = useState<HTMLButtonElement | null>(
-    null,
-  );
+  const [itemAnchorEl, setItemAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedItems, setSelectedItems] = useState<SubMenuItem[]>([]);
   const { isNestedItemOpen } = useNavContext();
   const { pathname } = useLocation();

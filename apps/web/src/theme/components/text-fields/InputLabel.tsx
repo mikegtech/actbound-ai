@@ -16,10 +16,10 @@ interface InputLabelOwnerState {
   };
 }
 
-const getApplyShrink = (ownerState: InputLabelOwnerState) => {
-  let applyShrink = ownerState.shrink;
+const getApplyShrink = (ownerState: InputLabelOwnerState): boolean => {
+  let applyShrink = Boolean(ownerState.shrink);
   if (ownerState.formControl?.adornedStart) {
-    applyShrink = ownerState.focused || ownerState.formControl.filled;
+    applyShrink = Boolean(ownerState.focused || ownerState.formControl.filled);
   }
   return applyShrink;
 };
@@ -71,10 +71,14 @@ const InputLabel: Components<Omit<Theme, "components">>["MuiInputLabel"] = {
         },
         // filled shrink adornedStart
         {
-          props: ({ variant, ownerState }) =>
-            variant === "filled" &&
-            getApplyShrink(ownerState) &&
-            ownerState.formControl?.adornedStart,
+          props: ({ variant, ownerState }) => {
+            const state = ownerState as InputLabelOwnerState;
+            return (
+              variant === "filled" &&
+              getApplyShrink(state) &&
+              Boolean(state.formControl?.adornedStart)
+            );
+          },
           style: {
             [`&.${inputLabelClasses.shrink}`]: {
               transform: "translate(44px, 6px) scale(.85)",
@@ -89,8 +93,12 @@ const InputLabel: Components<Omit<Theme, "components">>["MuiInputLabel"] = {
         },
         // filled default adornedStart
         {
-          props: ({ variant, ownerState }) =>
-            variant === "filled" && ownerState.formControl?.adornedStart,
+          props: ({ variant, ownerState }) => {
+            const state = ownerState as InputLabelOwnerState;
+            return (
+              variant === "filled" && Boolean(state.formControl?.adornedStart)
+            );
+          },
           style: {
             transform: "translate(44px, 14px) scale(1)",
             [`&.${inputLabelClasses.sizeSmall}`]: {

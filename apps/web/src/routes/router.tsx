@@ -8,6 +8,8 @@ import {
   useLocation,
 } from "@tanstack/react-router";
 import PageLoader from "components/loading/PageLoader";
+import AuthGuard from "components/guard/AuthGuard";
+import GuestGuard from "components/guard/GuestGuard";
 import MainLayout from "layouts/main-layout";
 import Page404 from "pages/errors/Page404";
 import { lazy, Suspense } from "react";
@@ -52,9 +54,11 @@ const mainLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "main",
   component: () => (
-    <MainLayout>
-      <SuspenseOutlet />
-    </MainLayout>
+    <AuthGuard>
+      <MainLayout>
+        <SuspenseOutlet />
+      </MainLayout>
+    </AuthGuard>
   ),
 });
 
@@ -236,7 +240,9 @@ const authLoginRoute = createRoute({
   path: "login",
   component: () => (
     <Suspense fallback={<PageLoader />}>
-      <Login />
+      <GuestGuard>
+        <Login />
+      </GuestGuard>
     </Suspense>
   ),
 });

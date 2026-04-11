@@ -5,6 +5,7 @@ import {
   Button,
   CircularProgress,
   Grid,
+  Alert,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { Link } from "@tanstack/react-router";
@@ -19,10 +20,21 @@ import { RiskAttentionCard } from "./components/RiskAttentionCard";
 import { DeniedPolicySnapshotCard } from "./components/DeniedPolicySnapshotCard";
 
 const SecurityDashboard = () => {
-  const { data: posture, isLoading: postureLoading } = useSecurityPosture();
-  const { data: risks, isLoading: risksLoading } = useRiskIndicators();
-  const { data: denials, isLoading: denialsLoading } =
-    useDeniedPolicySnapshots();
+  const {
+    data: posture,
+    isLoading: postureLoading,
+    isError: postureError,
+  } = useSecurityPosture();
+  const {
+    data: risks,
+    isLoading: risksLoading,
+    isError: risksError,
+  } = useRiskIndicators();
+  const {
+    data: denials,
+    isLoading: denialsLoading,
+    isError: denialsError,
+  } = useDeniedPolicySnapshots();
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
@@ -45,6 +57,13 @@ const SecurityDashboard = () => {
           My Controls
         </Button>
       </Stack>
+
+      {(postureError || risksError || denialsError) && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+          Some security posture data failed to load from the frontend mock.
+          Refresh this page after the query recovers.
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 4 }}>

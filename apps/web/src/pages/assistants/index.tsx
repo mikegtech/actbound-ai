@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Button,
   Stack,
   TextField,
   InputAdornment,
@@ -17,8 +16,11 @@ import {
   EmptyState,
 } from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
+import { UnavailableAction } from "components/common/UnavailableAction";
+import { useState } from "react";
 
 const Assistants = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const {
     data: assistants,
     isLoading,
@@ -32,7 +34,7 @@ const Assistants = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Assistants Directory"
-          subtitle="Manage autonomous agents, define their operational scopes, and monitor runtime efficiency across the organization."
+          subtitle="Review assistant identity, scoped capabilities, and delegated access visibility across the control plane."
         />
         <LoadingState />
       </Box>
@@ -44,18 +46,31 @@ const Assistants = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Assistants Directory"
-          subtitle="Manage autonomous agents, define their operational scopes, and monitor runtime efficiency across the organization."
+          subtitle="Review assistant identity, scoped capabilities, and delegated access visibility across the control plane."
         />
         <ErrorState error={error as Error} onRetry={refetch} />
       </Box>
     );
   }
 
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredAssistants = normalizedSearchTerm
+    ? assistants.filter((assistant) =>
+        [
+          assistant.name,
+          assistant.id,
+          assistant.internalCode,
+          assistant.organizationId,
+          assistant.status,
+        ].some((value) => value.toLowerCase().includes(normalizedSearchTerm)),
+      )
+    : assistants;
+
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <PageHeader
         title="Assistants Directory"
-        subtitle="Manage autonomous agents, define their operational scopes, and monitor runtime efficiency across the organization."
+        subtitle="Review assistant identity, scoped capabilities, and delegated access visibility across the control plane."
       />
 
       <Stack
@@ -66,6 +81,8 @@ const Assistants = () => {
       >
         <TextField
           placeholder="Search assistants by name or ID..."
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
           size="small"
           sx={{ width: { xs: "100%", md: 400 } }}
           InputProps={{
@@ -77,34 +94,40 @@ const Assistants = () => {
           }}
         />
         <Stack direction="row" spacing={2}>
-          <Button
+          <UnavailableAction
             variant="outlined"
+            reason="Assistant filtering facets are not wired to the frontend mock yet."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
           >
             Filter
-          </Button>
-          <Button
+          </UnavailableAction>
+          <UnavailableAction
             variant="contained"
+            reason="Assistant creation is intentionally disabled until the create flow exists."
             startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
           >
             New Assistant
-          </Button>
+          </UnavailableAction>
         </Stack>
       </Stack>
 
       <Grid container spacing={3} sx={{ mb: 6 }}>
         <Grid size={{ xs: 12, lg: 9 }}>
           <SectionWrapper title="Active Agents">
-            {assistants.length === 0 ? (
+            {filteredAssistants.length === 0 ? (
               <EmptyState
                 title="No Assistants Found"
-                description="There are no assistants configured in your organization yet."
+                description={
+                  normalizedSearchTerm
+                    ? "No assistants match the current search."
+                    : "There are no assistants configured in your organization yet."
+                }
               />
             ) : (
               <Grid container spacing={3}>
-                {assistants.map((assistant) => (
+                {filteredAssistants.map((assistant) => (
                   <Grid size={{ xs: 12, md: 6, xl: 4 }} key={assistant.id}>
                     <AssistantCard assistant={assistant} />
                   </Grid>
@@ -115,45 +138,46 @@ const Assistants = () => {
               variant="body2"
               sx={{ mt: 3, color: "text.secondary", textAlign: "center" }}
             >
-              Showing {assistants.length} of {assistants.length} Assistants
+              Showing {filteredAssistants.length} of {assistants.length}{" "}
+              Assistants
             </Typography>
           </SectionWrapper>
         </Grid>
 
         <Grid size={{ xs: 12, lg: 3 }}>
           <Stack spacing={3}>
-            <SectionWrapper title="Automate Access Reviews">
+            <SectionWrapper title="Access Review Readiness">
               <Typography variant="body2" sx={{ mb: 2 }}>
-                Set up your assistants to automatically flag unusual scoping
-                changes or runtime anomalies across your engineering
-                departments.
+                Assistant review rules will flag unusual scope changes after the
+                frontend is connected to policy and audit data.
               </Typography>
-              <Button
+              <UnavailableAction
                 size="small"
                 variant="text"
+                reason="Rule configuration is not implemented in this frontend pass."
                 endIcon={
                   <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
                 }
               >
                 Configure Rules
-              </Button>
+              </UnavailableAction>
             </SectionWrapper>
 
-            <SectionWrapper title="Boost Assistant Autonomy">
+            <SectionWrapper title="Threshold Review">
               <Typography variant="body2" sx={{ mb: 2 }}>
-                Assistants in 'Independent' mode currently perform 40% faster
-                than 'Delegated' tasks. Review your security thresholds to
-                safely switch modes.
+                Threshold reviews will compare assistant scopes against policy
+                and security findings when those relationships are wired.
               </Typography>
-              <Button
+              <UnavailableAction
                 size="small"
                 variant="text"
+                reason="Threshold review is not wired to mock policy/security data yet."
                 endIcon={
                   <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
                 }
               >
                 Review Thresholds
-              </Button>
+              </UnavailableAction>
             </SectionWrapper>
           </Stack>
         </Grid>

@@ -1,6 +1,7 @@
 import { Box, Typography, Stack, Button, Card } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { Link } from "@tanstack/react-router";
+import { UnavailableAction } from "components/common/UnavailableAction";
 
 const SecurityControls = () => {
   return (
@@ -44,12 +45,13 @@ const SecurityControls = () => {
             2 integrations are currently operating via manual fallback. Please
             rotate keys to enforce automated PKCE.
           </Typography>
-          <Button
+          <UnavailableAction
             variant="outlined"
+            reason="Key rotation is disabled until connected-account mutation flows exist."
             startIcon={<Icon icon="lucide:refresh-cw" />}
           >
             Rotate Now
-          </Button>
+          </UnavailableAction>
         </Card>
 
         <Card sx={{ p: 3 }}>
@@ -72,13 +74,14 @@ const SecurityControls = () => {
             1 delegation assigned to "Nightly Sync Agent" violated the temporal
             boundary condition.
           </Typography>
-          <Button
+          <UnavailableAction
             variant="contained"
             color="error"
+            reason="Delegation revocation is disabled until a safe mutation flow exists."
             startIcon={<Icon icon="lucide:x-circle" />}
           >
             Revoke Delegation
-          </Button>
+          </UnavailableAction>
         </Card>
       </Stack>
     </Box>

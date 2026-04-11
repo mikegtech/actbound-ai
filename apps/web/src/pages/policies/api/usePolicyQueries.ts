@@ -12,6 +12,10 @@ const MOCK_POLICIES: Policy[] = [
     author: "Sarah Chen",
     status: "active",
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    conditions: [
+      { field: "subject.role", operator: "in", value: ["incident_commander"] },
+      { field: "request.reason", operator: "eq", value: "break_glass" },
+    ],
   },
   {
     id: "pol_222_dl",
@@ -22,6 +26,9 @@ const MOCK_POLICIES: Policy[] = [
     author: "Marc Aurel",
     status: "draft",
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    conditions: [
+      { field: "resource.region", operator: "eq", value: "eu-central-1" },
+    ],
   },
   {
     id: "pol_333_fr",
@@ -33,6 +40,11 @@ const MOCK_POLICIES: Policy[] = [
     author: "Sarah Chen",
     status: "warning",
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    conditions: [
+      { field: "subject.role", operator: "in", value: ["finance_auditor"] },
+      { field: "resource.department", operator: "eq", value: "finance" },
+      { field: "request.action", operator: "eq", value: "ledger.read" },
+    ],
   },
   {
     id: "pol_444_ls",
@@ -43,39 +55,74 @@ const MOCK_POLICIES: Policy[] = [
     author: "System Auto",
     status: "archived",
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+    conditions: [],
   },
 ];
 
-const MOCK_TRACE: SimulationTrace = {
-  id: "trace_001_auth",
-  policyId: "pol_333_fr",
-  context: {
-    sourceIp: "10.0.4.122 (Internal VPN)",
-    shiftStatus: "Within Working Hours (EDT)",
+const MOCK_TRACES: Record<string, SimulationTrace> = {
+  pol_111_ca: {
+    id: "trace_pol_111_ca",
+    policyId: "pol_111_ca",
+    context: {
+      sourceIp: "10.12.4.18 (Corporate VPN)",
+      shiftStatus: "Incident window approved",
+    },
+    decision: "REQUIRES_REVIEW",
+    steps: [
+      {
+        id: "step_1",
+        name: "Break-Glass Reason Check",
+        detail:
+          "The request supplied a break-glass reason, but emergency justification still requires manual reviewer confirmation.",
+        outcome: "info",
+      },
+      {
+        id: "step_2",
+        name: "Incident Role Match",
+        detail:
+          "The actor is mapped to an incident commander role for this tenant boundary.",
+        outcome: "success",
+      },
+      {
+        id: "step_3",
+        name: "Reviewer Gate",
+        detail:
+          "Privileged override remains blocked until an authorized reviewer approves the request.",
+        outcome: "failure",
+      },
+    ],
   },
-  decision: "ALLOWED",
-  steps: [
-    {
-      id: "step_1",
-      name: "Global Deny-List Exclusion",
-      detail:
-        "System checked if user_001 is currently flagged in any active security incidents or global lockout lists.",
-      outcome: "success",
+  pol_333_fr: {
+    id: "trace_pol_333_fr",
+    policyId: "pol_333_fr",
+    context: {
+      sourceIp: "10.0.4.122 (Internal VPN)",
+      shiftStatus: "Within Working Hours (EDT)",
     },
-    {
-      id: "step_2",
-      name: "RBAC Entitlement Match",
-      detail:
-        "Role Finance Auditor includes ledger.read scope as a base entitlement.",
-      outcome: "success",
-    },
-    {
-      id: "step_3",
-      name: "Time Window Check",
-      detail: "14:22 falls within permitted [09:00 - 17:00] range.",
-      outcome: "info",
-    },
-  ],
+    decision: "ALLOWED",
+    steps: [
+      {
+        id: "step_1",
+        name: "Global Deny-List Exclusion",
+        detail:
+          "System checked whether the actor is flagged in active security incident or lockout lists.",
+        outcome: "success",
+      },
+      {
+        id: "step_2",
+        name: "Finance Department Match",
+        detail:
+          "The requested resource belongs to the finance department boundary required by this policy.",
+        outcome: "success",
+      },
+      {
+        id: "step_3",
+        name: "Action Scope Check",
+        detail: "ledger.read is covered by the policy action constraint.",
+        outcome: "success",
+      },
+    ],
+  },
 };
 
 export const usePoliciesList = () => {
@@ -104,12 +151,11 @@ export const usePolicyDetail = (id: string) => {
 };
 
 export const usePolicySimulationTrace = (policyId: string) => {
-  return useQuery({
+  return useQuery<SimulationTrace | null>({
     queryKey: ["policies", "trace", policyId],
     queryFn: async () => {
       await new Promise((resolve) => setTimeout(resolve, 800));
-      // Just return mock trace assuming it ties to the request config
-      return MOCK_TRACE;
+      return MOCK_TRACES[policyId] ?? null;
     },
     enabled: !!policyId,
     staleTime: 1000 * 60 * 5,

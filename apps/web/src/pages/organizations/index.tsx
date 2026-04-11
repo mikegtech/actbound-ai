@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Button,
   Stack,
   TextField,
   InputAdornment,
@@ -18,8 +17,11 @@ import {
   EmptyState,
 } from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
+import { UnavailableAction } from "components/common/UnavailableAction";
+import { useState } from "react";
 
 const Organizations = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const {
     data: organizations,
     isLoading,
@@ -33,7 +35,7 @@ const Organizations = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Organizations Directory"
-          subtitle="Manage tenant identities, health scores, and cross-entity compliance."
+          subtitle="Review organization boundaries, health signals, and mapped ActBound entities."
         />
         <LoadingState />
       </Box>
@@ -45,18 +47,30 @@ const Organizations = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Organizations Directory"
-          subtitle="Manage tenant identities, health scores, and cross-entity compliance."
+          subtitle="Review organization boundaries, health signals, and mapped ActBound entities."
         />
         <ErrorState error={error as Error} onRetry={refetch} />
       </Box>
     );
   }
 
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredOrganizations = normalizedSearchTerm
+    ? organizations.filter((organization) =>
+        [
+          organization.name,
+          organization.id,
+          organization.internalCode,
+          organization.status,
+        ].some((value) => value.toLowerCase().includes(normalizedSearchTerm)),
+      )
+    : organizations;
+
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <PageHeader
         title="Organizations Directory"
-        subtitle="Manage tenant identities, health scores, and cross-entity compliance."
+        subtitle="Review organization boundaries, health signals, and mapped ActBound entities."
       />
 
       <Stack
@@ -67,6 +81,8 @@ const Organizations = () => {
       >
         <TextField
           placeholder="Search organizations..."
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
           size="small"
           sx={{ width: { xs: "100%", md: 400 } }}
           InputProps={{
@@ -78,36 +94,42 @@ const Organizations = () => {
           }}
         />
         <Stack direction="row" spacing={2}>
-          <Button
+          <UnavailableAction
             variant="outlined"
+            reason="Organization filtering facets are not wired to the frontend mock yet."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
           >
             Filter
-          </Button>
-          <Button
+          </UnavailableAction>
+          <UnavailableAction
             variant="contained"
+            reason="Organization creation is disabled until the create flow exists."
             startIcon={
               <IconifyIcon icon="material-symbols:domain-add-rounded" />
             }
           >
             New Organization
-          </Button>
+          </UnavailableAction>
         </Stack>
       </Stack>
 
       <Grid container spacing={3} sx={{ mb: 6 }}>
         <Grid size={{ xs: 12, lg: 9 }}>
           <SectionWrapper title="Global Status">
-            {organizations.length === 0 ? (
+            {filteredOrganizations.length === 0 ? (
               <EmptyState
                 title="No Organizations Found"
-                description="There are no active organizations."
+                description={
+                  normalizedSearchTerm
+                    ? "No organizations match the current search."
+                    : "There are no active organizations."
+                }
               />
             ) : (
               <Grid container spacing={3}>
-                {organizations.map((org) => (
+                {filteredOrganizations.map((org) => (
                   <Grid size={{ xs: 12, md: 6, xl: 4 }} key={org.id}>
                     <OrganizationCard organization={org} />
                   </Grid>
@@ -118,17 +140,18 @@ const Organizations = () => {
               variant="body2"
               sx={{ mt: 3, color: "text.secondary", textAlign: "center" }}
             >
-              {organizations.length} Total Entities
+              Showing {filteredOrganizations.length} of {organizations.length}{" "}
+              organizations
             </Typography>
           </SectionWrapper>
         </Grid>
 
         <Grid size={{ xs: 12, lg: 3 }}>
           <Stack spacing={3}>
-            <SectionWrapper title="Policy Adherence Heatmap">
+            <SectionWrapper title="Policy Posture Preview">
               <Typography variant="body2" sx={{ mb: 2 }}>
-                Cross-entity compliance density across 8 core security
-                verticals.
+                Static preview for organization-level policy coverage. Live
+                posture export is not wired in this frontend pass.
               </Typography>
               <Paper
                 variant="outlined"
@@ -146,15 +169,16 @@ const Organizations = () => {
                   sx={{ fontSize: 48, color: "text.disabled" }}
                 />
               </Paper>
-              <Button
+              <UnavailableAction
                 size="small"
                 variant="text"
+                reason="Detailed organization posture export is not implemented yet."
                 endIcon={
                   <IconifyIcon icon="material-symbols:download-rounded" />
                 }
               >
                 Download Detailed Assessment
-              </Button>
+              </UnavailableAction>
             </SectionWrapper>
           </Stack>
         </Grid>

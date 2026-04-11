@@ -8,6 +8,7 @@ export interface Resource {
   category: "document" | "api" | "infrastructure" | "database";
   sensitivity: ResourceSensitivity;
   organizationId: string;
+  organizationName: string;
   description: string;
   assistantAccessCount: number;
   lastAuditedAt: string;

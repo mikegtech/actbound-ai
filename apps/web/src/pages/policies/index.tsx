@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Button,
   Stack,
   TextField,
   InputAdornment,
@@ -18,8 +17,11 @@ import {
   EmptyState,
 } from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
+import { UnavailableAction } from "components/common/UnavailableAction";
+import { useState } from "react";
 
 const Policies = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const {
     data: policies,
     isLoading,
@@ -33,7 +35,7 @@ const Policies = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Policy Engine"
-          subtitle="Manage and deploy access control guardrails across your multi-cloud environment."
+          subtitle="Review frontend policy definitions, rule conditions, and trace readiness for governed assistant actions."
         />
         <LoadingState />
       </Box>
@@ -45,18 +47,38 @@ const Policies = () => {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <PageHeader
           title="Policy Engine"
-          subtitle="Manage and deploy access control guardrails across your multi-cloud environment."
+          subtitle="Review frontend policy definitions, rule conditions, and trace readiness for governed assistant actions."
         />
         <ErrorState error={error as Error} onRetry={refetch} />
       </Box>
     );
   }
 
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredPolicies = normalizedSearchTerm
+    ? policies.filter((policy) =>
+        [
+          policy.name,
+          policy.id,
+          policy.env,
+          policy.scope,
+          policy.status,
+          policy.author,
+        ].some((value) => value.toLowerCase().includes(normalizedSearchTerm)),
+      )
+    : policies;
+  const activePolicyCount = policies.filter(
+    (policy) => policy.status === "active",
+  ).length;
+  const warningPolicyCount = policies.filter(
+    (policy) => policy.status === "warning",
+  ).length;
+
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <PageHeader
         title="Policy Engine"
-        subtitle="Manage and deploy access control guardrails across your multi-cloud environment."
+        subtitle="Review frontend policy definitions, rule conditions, and trace readiness for governed assistant actions."
       />
 
       <Stack
@@ -67,6 +89,8 @@ const Policies = () => {
       >
         <TextField
           placeholder="Search policies..."
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
           size="small"
           sx={{ width: { xs: "100%", md: 400 } }}
           InputProps={{
@@ -78,34 +102,40 @@ const Policies = () => {
           }}
         />
         <Stack direction="row" spacing={2}>
-          <Button
+          <UnavailableAction
             variant="outlined"
+            reason="Policy filtering facets are not wired to the frontend mock yet."
             startIcon={
               <IconifyIcon icon="material-symbols:filter-list-rounded" />
             }
           >
             Filter
-          </Button>
-          <Button
+          </UnavailableAction>
+          <UnavailableAction
             variant="contained"
+            reason="Policy creation is disabled until the policy authoring flow exists."
             startIcon={<IconifyIcon icon="material-symbols:post-add-rounded" />}
           >
             New Policy
-          </Button>
+          </UnavailableAction>
         </Stack>
       </Stack>
 
       <Grid container spacing={3} sx={{ mb: 6 }}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <SectionWrapper title="Active Rulesets">
-            {policies.length === 0 ? (
+            {filteredPolicies.length === 0 ? (
               <EmptyState
                 title="No Policies Found"
-                description="The policy engine has no active constraints."
+                description={
+                  normalizedSearchTerm
+                    ? "No policies match the current search."
+                    : "The policy engine has no active constraints."
+                }
               />
             ) : (
               <Stack spacing={3}>
-                {policies.map((policy) => (
+                {filteredPolicies.map((policy) => (
                   <PolicyCard key={policy.id} policy={policy} />
                 ))}
               </Stack>
@@ -171,10 +201,14 @@ const Policies = () => {
                 />
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    92% Compliance Reached
+                    {activePolicyCount} of {policies.length} policies active
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Global Enterprise
+                    {warningPolicyCount}{" "}
+                    {warningPolicyCount === 1
+                      ? "warning policy requires"
+                      : "warning policies require"}{" "}
+                    review
                   </Typography>
                 </Box>
               </Paper>

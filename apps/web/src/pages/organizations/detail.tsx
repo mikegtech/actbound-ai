@@ -1,4 +1,4 @@
-import { Box, Typography, Button, Stack, Divider, Grid } from "@mui/material";
+import { Box, Typography, Stack, Divider, Grid } from "@mui/material";
 import { PageHeader } from "components/common/PageHeader";
 import { SectionWrapper } from "components/common/SectionWrapper";
 import { useOrganizationDetail } from "./api/useOrganizationQueries";
@@ -6,6 +6,7 @@ import { OrganizationHealthBadge } from "./components/OrganizationHealthBadge";
 import { LoadingState, ErrorState } from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
 import dayjs from "dayjs";
+import { UnavailableAction } from "components/common/UnavailableAction";
 
 interface OrganizationDetailProps {
   id: string;
@@ -26,7 +27,7 @@ const OrganizationDetail = ({ id }: OrganizationDetailProps) => {
         <PageHeader
           title="Loading..."
           breadcrumbs={[
-            { label: "Organizations", href: "/organizations" },
+            { label: "Organizations", to: "/organizations" },
             { label: "Detail" },
           ]}
         />
@@ -41,7 +42,7 @@ const OrganizationDetail = ({ id }: OrganizationDetailProps) => {
         <PageHeader
           title="Error"
           breadcrumbs={[
-            { label: "Organizations", href: "/organizations" },
+            { label: "Organizations", to: "/organizations" },
             { label: "Detail" },
           ]}
         />
@@ -56,28 +57,30 @@ const OrganizationDetail = ({ id }: OrganizationDetailProps) => {
         title={organization.name}
         subtitle={organization.description}
         breadcrumbs={[
-          { label: "Organizations", href: "/organizations" },
+          { label: "Organizations", to: "/organizations" },
           { label: organization.name },
         ]}
       />
 
       <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
-        <Button
+        <UnavailableAction
           variant="outlined"
+          reason="Organization settings are read-only until the settings flow is wired."
           startIcon={
             <IconifyIcon icon="material-symbols:settings-outline-rounded" />
           }
         >
           Manage Settings
-        </Button>
-        <Button
+        </UnavailableAction>
+        <UnavailableAction
           variant="outlined"
+          reason="Organization access review is not wired to policy/audit data yet."
           startIcon={
             <IconifyIcon icon="material-symbols:shield-lock-outline-rounded" />
           }
         >
           Review Access
-        </Button>
+        </UnavailableAction>
       </Stack>
 
       <Grid container spacing={4}>
@@ -194,7 +197,8 @@ const OrganizationDetail = ({ id }: OrganizationDetailProps) => {
                   color="text.secondary"
                   sx={{ textAlign: "center" }}
                 >
-                  Integrate third-party SAML mapping rules here.
+                  Delegation topology will appear here after delegation records
+                  are linked to this organization.
                 </Typography>
               </Box>
             </SectionWrapper>

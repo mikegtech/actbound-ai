@@ -89,24 +89,31 @@ const DateCalendar: Components<Omit<Theme, "components">>["MuiDateCalendar"] = {
         );
       },
 
-      day: (props) => (
-        <PickersDay
-          {...props}
-          sx={(theme) => ({
-            height: 40,
-            width: 40,
-            borderRadius: theme.spacing(0.5),
-            flexShrink: 0,
-            margin: 0,
-            fontSize: theme.typography.body1.fontSize,
+      day: (props) => {
+        const { ref: _ref, ...dayProps } = props as typeof props & {
+          ref?: unknown;
+        };
+        void _ref;
 
-            [`&.${pickersDayClasses.today}`]: {
-              fontWeight: 700,
-              border: "none",
-            },
-          })}
-        />
-      ),
+        return (
+          <PickersDay
+            {...dayProps}
+            sx={(theme) => ({
+              height: 40,
+              width: 40,
+              borderRadius: theme.spacing(0.5),
+              flexShrink: 0,
+              margin: 0,
+              fontSize: theme.typography.body1.fontSize,
+
+              [`&.${pickersDayClasses.today}`]: {
+                fontWeight: 700,
+                border: "none",
+              },
+            })}
+          />
+        );
+      },
     },
   },
 

@@ -86,18 +86,21 @@ export const AssistantCard = ({ assistant }: Props) => {
 
       <Divider sx={{ mb: 2, mx: -3 }} />
 
-      <Button
-        component={Link}
+      <Link
         to="/assistants/$assistantId"
         params={{ assistantId: assistant.id }}
-        fullWidth
-        variant="outlined"
-        endIcon={
-          <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
-        }
+        style={{ textDecoration: "none" }}
       >
-        View Detail
-      </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          endIcon={
+            <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
+          }
+        >
+          View Detail
+        </Button>
+      </Link>
     </Paper>
   );
 };

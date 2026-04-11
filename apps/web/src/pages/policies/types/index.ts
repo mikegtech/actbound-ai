@@ -1,4 +1,6 @@
-// TODO(sdk-consolidation): Move these robust domain types to @actbound/sdk
+import type { PolicyCondition } from "@actbound/sdk";
+
+// TODO(sdk-consolidation): Align the remaining presentation fields with @actbound/sdk policy views.
 
 export type PolicyStatus = "active" | "draft" | "archived" | "warning";
 
@@ -11,6 +13,7 @@ export interface Policy {
   author: string;
   status: PolicyStatus;
   updatedAt: string;
+  conditions: PolicyCondition[];
 }
 
 export type TraceDecision = "ALLOWED" | "DENIED" | "REQUIRES_REVIEW";

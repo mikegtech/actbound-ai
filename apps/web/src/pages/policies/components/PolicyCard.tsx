@@ -74,19 +74,22 @@ export const PolicyCard = ({ policy }: Props) => {
 
       <Divider sx={{ mb: 2, mx: -3 }} />
 
-      <Button
-        component={Link}
+      <Link
         to="/policies/$policyId"
         params={{ policyId: policy.id }}
-        fullWidth
-        variant="text"
-        color="secondary"
-        endIcon={
-          <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
-        }
+        style={{ textDecoration: "none" }}
       >
-        View Logic
-      </Button>
+        <Button
+          fullWidth
+          variant="text"
+          color="secondary"
+          endIcon={
+            <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
+          }
+        >
+          View Logic
+        </Button>
+      </Link>
     </Paper>
   );
 };

@@ -7,11 +7,12 @@ import {
   Tab,
   Paper,
   Divider,
-  Button,
   TextField,
+  Alert,
 } from "@mui/material";
 import { PageHeader } from "components/common/PageHeader";
 import IconifyIcon from "components/base/IconifyIcon";
+import { UnavailableAction } from "components/common/UnavailableAction";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -48,8 +49,13 @@ const Settings = () => {
         {/* Header Block */}
         <PageHeader
           title="Settings"
-          subtitle="Manage organizational identity profiles, global boundary defaults, and cross-platform integrations for your localized ActBound gateway."
+          subtitle="Review frontend settings placeholders for identity, defaults, integrations, and security controls."
         />
+
+        <Alert severity="info" sx={{ borderRadius: 2 }}>
+          Settings are read-only in this frontend mock. Mutation controls are
+          disabled until safe gateway-backed flows exist.
+        </Alert>
 
         {/* Content Layout */}
         <Paper
@@ -137,6 +143,8 @@ const Settings = () => {
                     placeholder="System Administrator"
                     size="small"
                     variant="outlined"
+                    disabled
+                    helperText="Profile persistence is not wired yet."
                   />
                 </Box>
                 <Box mt={2}>
@@ -148,16 +156,19 @@ const Settings = () => {
                     placeholder="admin@domain.com"
                     size="small"
                     variant="outlined"
+                    disabled
+                    helperText="Profile persistence is not wired yet."
                   />
                 </Box>
                 <Box pt={2}>
-                  <Button
+                  <UnavailableAction
                     variant="contained"
                     disableElevation
+                    reason="Saving identifiers is disabled until profile persistence exists."
                     sx={{ borderRadius: 2 }}
                   >
                     Save Identifiers
-                  </Button>
+                  </UnavailableAction>
                 </Box>
               </Stack>
             </SettingsTabPanel>
@@ -189,9 +200,14 @@ const Settings = () => {
                     Automatically DENY requests originating from assistant
                     workflows lacking immediate verification trust bounds.
                   </Typography>
-                  <Button variant="outlined" color="primary" size="small">
+                  <UnavailableAction
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    reason="Default boundary changes are disabled until a safe settings mutation flow exists."
+                  >
                     Toggle Default
-                  </Button>
+                  </UnavailableAction>
                 </Box>
               </Stack>
             </SettingsTabPanel>
@@ -222,15 +238,15 @@ const Settings = () => {
                     sx={{ color: "text.secondary", mb: 1 }}
                   />
                   <Typography variant="body1" fontWeight={600}>
-                    No External Providers Linked
+                    Integration Management Pending
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     display="block"
                   >
-                    Use the Delegations page to manually approve the primary
-                    external bridges.
+                    Connected account records are reviewed from Trust Core until
+                    settings integration management is wired.
                   </Typography>
                 </Box>
               </Stack>
@@ -262,9 +278,14 @@ const Settings = () => {
                     assistants operating on this delegated principal will be
                     suspended.
                   </Typography>
-                  <Button variant="contained" color="error" disableElevation>
+                  <UnavailableAction
+                    variant="contained"
+                    color="error"
+                    disableElevation
+                    reason="Session revocation is disabled until a safe auth mutation flow exists."
+                  >
                     Revoke All Sessions
-                  </Button>
+                  </UnavailableAction>
                 </Box>
               </Stack>
             </SettingsTabPanel>

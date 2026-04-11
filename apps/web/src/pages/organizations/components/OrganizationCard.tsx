@@ -82,18 +82,21 @@ export const OrganizationCard = ({ organization }: Props) => {
 
       <Divider sx={{ mb: 2, mx: -3 }} />
 
-      <Button
-        component={Link}
+      <Link
         to="/organizations/$organizationId"
         params={{ organizationId: organization.id }}
-        fullWidth
-        variant="outlined"
-        endIcon={
-          <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
-        }
+        style={{ textDecoration: "none" }}
       >
-        View Directory
-      </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          endIcon={
+            <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" />
+          }
+        >
+          View Directory
+        </Button>
+      </Link>
     </Paper>
   );
 };

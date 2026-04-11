@@ -16,7 +16,7 @@ export const LinkBehavior = ({ ref, href, ...other }: LinkBehaviorProps) => {
   if (href?.startsWith("#") || href?.startsWith("http")) {
     return <a ref={ref} href={href} {...other} />;
   }
-  return <TanStackLink ref={ref} to={href} {...other} />;
+  return <TanStackLink to={href} {...other} />;
 };
 
 export const HashLinkBehavior = ({
@@ -27,7 +27,7 @@ export const HashLinkBehavior = ({
   if (href?.includes("#")) {
     return <a ref={ref} href={href} {...other} />;
   }
-  return <TanStackLink ref={ref} to={href} {...other} />;
+  return <TanStackLink to={href} {...other} />;
 };
 
 const Link: Components<Omit<Theme, "components">>["MuiLink"] = {

@@ -10,7 +10,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     status: "active",
     description:
       "Monitors Stripe clearing streams and routes anomalous transactional metadata to the security review channel.",
-    organizationId: "org_finance_us",
+    organizationId: "org_003_qk",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
     lastActiveAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     capabilities: [
@@ -42,7 +42,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     status: "pending",
     description:
       "Executes automated CI/CD sweeps and deployment rollbacks on approval.",
-    organizationId: "org_engineering",
+    organizationId: "org_001_nc",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
     lastActiveAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
     capabilities: [
@@ -67,7 +67,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     type: "automation",
     status: "restricted",
     description: "Analyzes cross-account IAM posture.",
-    organizationId: "org_security",
+    organizationId: "org_002_va",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
     lastActiveAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
     capabilities: [
@@ -83,7 +83,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     status: "active",
     description:
       "Summarizes UX feedback streams directly inside organization channels.",
-    organizationId: "org_product",
+    organizationId: "org_001_nc",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
     lastActiveAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
     capabilities: [

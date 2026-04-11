@@ -15,7 +15,11 @@ import {
   usePolicyDetail,
 } from "./api/usePolicyQueries";
 import { SimulationStepNode } from "./components/SimulationStepNode";
-import { LoadingState, ErrorState } from "components/common/StateViews";
+import {
+  LoadingState,
+  ErrorState,
+  EmptyState,
+} from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
 
 interface SimulationProps {
@@ -38,7 +42,7 @@ const PolicySimulation = ({ id }: SimulationProps) => {
         <PageHeader
           title="Running Engine Trace..."
           breadcrumbs={[
-            { label: "Policies", href: "/policies" },
+            { label: "Policies", to: "/policies" },
             { label: "Simulation" },
           ]}
         />
@@ -53,11 +57,34 @@ const PolicySimulation = ({ id }: SimulationProps) => {
         <PageHeader
           title="Engine Error"
           breadcrumbs={[
-            { label: "Policies", href: "/policies" },
+            { label: "Policies", to: "/policies" },
             { label: "Simulation" },
           ]}
         />
         <ErrorState error={error as Error} onRetry={refetch} />
+      </Box>
+    );
+  }
+
+  if (!trace || trace.policyId !== id) {
+    return (
+      <Box sx={{ p: { xs: 2, md: 4 } }}>
+        <PageHeader
+          title="Policy Trace Analysis"
+          subtitle={`No policy-specific trace is available for ${
+            policy?.name || id
+          } in the frontend mock data.`}
+          breadcrumbs={[
+            { label: "Policies", to: "/policies" },
+            { label: policy?.name || id, to: `/policies/${id}` },
+            { label: "Trace Simulation" },
+          ]}
+        />
+        <EmptyState
+          title="No Simulation Trace Available"
+          description="This page only renders traces that match the selected policy ID. Add a typed mock trace for this policy before showing evaluation results."
+          icon="material-symbols:science-outline-rounded"
+        />
       </Box>
     );
   }
@@ -75,8 +102,8 @@ const PolicySimulation = ({ id }: SimulationProps) => {
         title="Policy Trace Analysis"
         subtitle={`Contextual sandbox run against ${policy?.name || "Policy"}`}
         breadcrumbs={[
-          { label: "Policies", href: "/policies" },
-          { label: policy?.name || id, href: `/policies/${id}` },
+          { label: "Policies", to: "/policies" },
+          { label: policy?.name || id, to: `/policies/${id}` },
           { label: "Trace Simulation" },
         ]}
       />
