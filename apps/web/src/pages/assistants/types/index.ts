@@ -22,3 +22,35 @@ export interface Assistant {
   createdAt: string;
   lastActiveAt: string;
 }
+
+export interface AssistantBoundaryLink {
+  id: string;
+  name: string;
+  route: string;
+  meta?: string;
+}
+
+export interface AssistantConnectedAccountLink {
+  id: string;
+  provider: string;
+  accountName: string;
+  connectionState: "HEALTHY" | "DISCONNECTED" | "NEEDS_ATTENTION" | "PENDING";
+}
+
+export interface AssistantTrustSignal {
+  id: string;
+  label: string;
+  severity: "info" | "warning" | "high";
+  route: string;
+}
+
+export interface AssistantTrustBoundarySummary {
+  assistantId: string;
+  organization: AssistantBoundaryLink;
+  reachableResources: AssistantBoundaryLink[];
+  delegatedAccounts: AssistantConnectedAccountLink[];
+  delegations: AssistantBoundaryLink[];
+  governingPolicies: AssistantBoundaryLink[];
+  auditSignals: AssistantTrustSignal[];
+  securitySignals: AssistantTrustSignal[];
+}

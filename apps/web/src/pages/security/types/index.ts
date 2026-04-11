@@ -26,3 +26,21 @@ export interface DeniedPolicySnapshot {
   actionAttempted: string;
   deniedAt: number;
 }
+
+export interface SecurityControlItem {
+  id: string;
+  title: string;
+  description: string;
+  severity: "medium" | "high";
+  sourceType: "connected_account" | "delegation";
+  sourceId: string;
+  sourceLabel: string;
+  relatedDelegationId?: string;
+  route:
+    | "/delegations/$delegationId"
+    | "/security"
+    | "/audit"
+    | "/assistants/$assistantId";
+  actionLabel: string;
+  actionReason: string;
+}

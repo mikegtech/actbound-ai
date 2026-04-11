@@ -9,6 +9,7 @@ export interface Delegation {
   };
   assistant: {
     id: string;
+    internalCode: string;
     name: string;
   };
   organization: {
@@ -20,6 +21,10 @@ export interface Delegation {
   createdAt: string;
   expiresAt?: string;
   connectedAccountId?: string;
+  resourceIds: string[];
+  policyIds: string[];
+  auditEventIds: string[];
+  securitySignalIds: string[];
 }
 
 export type ConnectionState =
@@ -37,4 +42,13 @@ export interface ConnectedAccount {
   assistantIds: string[]; // Assistants currently utilizing this connection
   connectedAt: string;
   lastSyncAt?: string;
+}
+
+export interface DelegationPostureSummary {
+  totalDelegations: number;
+  activeDelegations: number;
+  pendingDelegations: number;
+  revokedDelegations: number;
+  healthyConnections: number;
+  attentionConnections: number;
 }

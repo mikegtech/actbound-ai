@@ -435,6 +435,22 @@ Completed in this sprint:
 - normalized resource organization ownership to stable IDs/names and linked resource owners to organization detail routes
 - fixed frontend TypeScript issues found during the sprint so `@actbound/web` now passes `tsc --noEmit`
 
+## Production Follow-Up Triage Sprint 2
+
+Completed in this sprint:
+
+- added typed frontend assistant boundary summaries for owning organization, reachable resources, delegated accounts, governing policies, delegations, audit signals, and security signals
+- replaced the assistant detail integration placeholder with linked trust-boundary context and honest empty states
+- added a delegation detail route at `/delegations/$delegationId`
+- replaced delegation card `View Detail` disabled affordances with real links to the new detail route
+- added aggregate Trust Core posture summary metrics for delegations and connected-account health
+- linked connected accounts to assistant detail routes where the current frontend mock has assistant relationships
+- backed Security My Controls with typed Query-backed mock data tied to connected-account and delegation state
+- aligned security risk and denial mock identifiers with current assistant, policy, resource, connected-account, and delegation IDs
+- made Settings profile/default/security fields controlled from typed mock/query state while keeping mutation controls disabled
+- aligned Settings integrations with the same connected-account mock data used by Trust Core
+- improved Settings tab behavior for mobile widths without changing backend behavior
+
 ---
 
 ## Current Status Summary
@@ -460,7 +476,7 @@ Completed in this sprint:
 
 ### Remaining
 
-- None
+- Active follow-up backlog remains tracked below; no phase should be treated as fully complete yet
 
 ---
 
@@ -483,7 +499,7 @@ Need to complete:
 Need to complete:
 
 - implement assistant filters, creation, editing, restriction, rule configuration, and threshold review when those flows are in scope
-- strengthen assistant detail pages with linked boundary context for reachable resources, delegated accounts, governing policies, and relevant audit/security signals
+- replace frontend-only assistant boundary summaries with gateway-backed data when contracts exist and deepen direct source linking for audit/security records
 
 ### Phase 3 — Organizations + Resources follow-up
 
@@ -503,19 +519,18 @@ Need to complete:
 
 Need to complete:
 
-- implement delegation detail or expandable detail
 - implement Manage Connection and any future grant/revoke actions through safe mutation flows
-- link delegations and connected accounts to assistants, organizations, policies, resources, audit, and security data
-- add aggregate delegation/account posture summaries
-- align Trust Core, integration, delegation, and security-control language across pages
+- add connected-account detail or management routes if those become product scope
+- deepen audit/security cross-links beyond list-level navigation once source detail routes or filters exist
+- replace frontend-only relationship summaries with gateway-backed data when contracts exist
 
 ### Phase 6 — Security follow-up
 
 Need to complete:
 
-- back My Controls with typed mock/query data instead of fixed copy
 - link risks and denials to source assistants, connected accounts, delegations, policies, resources, or audit events
-- reconcile security controls with delegation and connected-account state
+- replace frontend-only control and posture summaries with gateway-backed data when contracts exist
+- implement safe security-control mutations such as rotation and revocation when those flows are in scope
 
 ### Phase 7 — Audit follow-up
 
@@ -531,10 +546,8 @@ Need to complete:
 
 Need to complete:
 
-- make settings fields controlled and mock/query-backed, or disable them as placeholders
 - implement safe mutation flows for Save Identifiers, Toggle Default, Revoke All Sessions, and other mutation-looking controls
-- align the integrations panel with connected account data beyond read-only explanatory copy
-- improve mobile behavior for the vertical settings tabs
+- replace frontend-only settings and integration snapshots with gateway-backed data when contracts exist
 - complete the final cross-route consistency and template-residue pass
 
 ---

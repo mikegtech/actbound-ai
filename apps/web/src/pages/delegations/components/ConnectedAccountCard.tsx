@@ -2,10 +2,12 @@ import {
   Box,
   Card,
   CardContent,
+  Chip,
   Divider,
   Stack,
   Typography,
 } from "@mui/material";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { ConnectedAccount } from "../types";
 import { ConnectionStateBadge } from "./ConnectionStateBadge";
 import IconifyIcon from "components/base/IconifyIcon";
@@ -96,10 +98,35 @@ export const ConnectedAccountCard = ({ account }: Props) => {
             >
               Utilized By
             </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5 }}>
-              {account.assistantIds.length}{" "}
-              {account.assistantIds.length === 1 ? "Assistant" : "Assistants"}
-            </Typography>
+            {account.assistantIds.length > 0 ? (
+              <Stack
+                direction="row"
+                spacing={1}
+                flexWrap="wrap"
+                useFlexGap
+                mt={1}
+              >
+                {account.assistantIds.map((assistantId) => (
+                  <RouterLink
+                    key={assistantId}
+                    to="/assistants/$assistantId"
+                    params={{ assistantId }}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <Chip
+                      label={assistantId}
+                      size="small"
+                      clickable
+                      sx={{ fontFamily: "Space Grotesk" }}
+                    />
+                  </RouterLink>
+                ))}
+              </Stack>
+            ) : (
+              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                No assistant relationships listed.
+              </Typography>
+            )}
           </Box>
         </Stack>
 

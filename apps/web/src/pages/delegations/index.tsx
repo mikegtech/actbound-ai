@@ -6,6 +6,7 @@ import {
   Tab,
   CircularProgress,
   Alert,
+  Paper,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import React, { useState } from "react";
@@ -13,6 +14,7 @@ import { PageHeader } from "components/common/PageHeader";
 import {
   useDelegations,
   useConnectedAccounts,
+  useDelegationPostureSummary,
 } from "./api/useDelegationQueries";
 import { DelegationCard } from "./components/DelegationCard";
 import { ConnectedAccountCard } from "./components/ConnectedAccountCard";
@@ -52,8 +54,13 @@ const Delegations = () => {
     isLoading: accountsLoading,
     error: accountsError,
   } = useConnectedAccounts();
+  const {
+    data: postureSummary,
+    isLoading: postureLoading,
+    error: postureError,
+  } = useDelegationPostureSummary();
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
   };
 
@@ -62,8 +69,64 @@ const Delegations = () => {
       <Stack spacing={4}>
         <PageHeader
           title="Trust Core"
-          subtitle="Manage delegated authority across your organization. Monitor active assistant access limits, external connected accounts, and the scope of capabilities granted to autonomous agents."
+          subtitle="Review delegated authority, connected account health, and assistant trust boundaries across the current frontend scope."
         />
+
+        {postureError && (
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            Failed to load delegation posture summary.
+          </Alert>
+        )}
+
+        <Grid container spacing={2}>
+          {[
+            {
+              label: "Total Delegations",
+              value: postureSummary?.totalDelegations,
+              helper: "All frontend mock grants",
+            },
+            {
+              label: "Active / Pending",
+              value:
+                postureSummary &&
+                `${postureSummary.activeDelegations} / ${postureSummary.pendingDelegations}`,
+              helper: "Granted authority needing review",
+            },
+            {
+              label: "Revoked",
+              value: postureSummary?.revokedDelegations,
+              helper: "Closed or expired trust paths",
+            },
+            {
+              label: "Connections Healthy",
+              value:
+                postureSummary &&
+                `${postureSummary.healthyConnections} healthy, ${postureSummary.attentionConnections} attention`,
+              helper: "Connected account posture",
+            },
+          ].map((metric) => (
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={metric.label}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  height: "100%",
+                  bgcolor: "surfaceContainerLowest.main",
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  {metric.label}
+                </Typography>
+                <Typography variant="h4" fontWeight={800} sx={{ mt: 0.5 }}>
+                  {postureLoading ? "..." : metric.value}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {metric.helper}
+                </Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
 
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs

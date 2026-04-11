@@ -27,6 +27,7 @@ const Policies = lazy(() => import("pages/policies"));
 const PolicyDetail = lazy(() => import("pages/policies/detail"));
 const PolicySimulation = lazy(() => import("pages/policies/simulation"));
 const Delegations = lazy(() => import("pages/delegations"));
+const DelegationDetail = lazy(() => import("pages/delegations/detail"));
 const Security = lazy(() => import("pages/security"));
 const SecurityControls = lazy(() => import("pages/security/controls"));
 const Audit = lazy(() => import("pages/audit"));
@@ -188,6 +189,19 @@ const delegationsRoute = createRoute({
   ),
 });
 
+const delegationsDetailRoute = createRoute({
+  getParentRoute: () => mainLayoutRoute,
+  path: "delegations/$delegationId",
+  component: () => {
+    const { delegationId } = delegationsDetailRoute.useParams();
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <DelegationDetail id={delegationId} />
+      </Suspense>
+    );
+  },
+});
+
 const securityRoute = createRoute({
   getParentRoute: () => mainLayoutRoute,
   path: "security",
@@ -279,6 +293,7 @@ const routeTree = rootRoute.addChildren([
     policiesDetailRoute,
     policiesSimulationRoute,
     delegationsRoute,
+    delegationsDetailRoute,
     securityRoute,
     securityControlsRoute,
     auditRoute,

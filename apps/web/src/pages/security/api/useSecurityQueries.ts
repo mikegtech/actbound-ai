@@ -3,6 +3,7 @@ import type {
   SecurityPosture,
   RiskIndicator,
   DeniedPolicySnapshot,
+  SecurityControlItem,
 } from "../types";
 
 // Mock delays
@@ -32,17 +33,17 @@ export function useRiskIndicators() {
         {
           id: "risk_1",
           sourceType: "connected_account",
-          sourceId: "conn_aws_prod",
-          sourceName: "AWS Production Boundary",
+          sourceId: "conn_2111b_st",
+          sourceName: "Stripe production connected account",
           severity: "high",
           description: "Key rotation overdue by 14 days.",
           detectedAt: Date.now() - 1000 * 60 * 60 * 24 * 2,
         },
         {
           id: "risk_2",
-          sourceType: "assistant",
-          sourceId: "ast_data_puller",
-          sourceName: "Nightly Sync Agent",
+          sourceType: "delegation",
+          sourceId: "dlg_sec_guard",
+          sourceName: "AWS security audit role delegation",
           severity: "medium",
           description:
             "Attempted to access out-of-scope bucket s3://archive-logs.",
@@ -61,21 +62,61 @@ export function useDeniedPolicySnapshots() {
       return [
         {
           id: "denial_1",
-          policyId: "pol_prod_write",
-          policyName: "Production Write Barrier",
-          assistantName: "Nightly Sync Agent",
-          resourceType: "EC2 Instance",
-          actionAttempted: "ec2:RebootInstances",
+          policyId: "pol_111_ca",
+          policyName: "Cloud-Admin-Global-Override",
+          assistantName: "Cyber-Guard Prime",
+          resourceType: "Edge_Compute_Node_04",
+          actionAttempted: "aws:iam_write",
           deniedAt: Date.now() - 1000 * 60 * 15,
         },
         {
           id: "denial_2",
-          policyId: "pol_stripe_read",
-          policyName: "Stripe Global Read",
-          assistantName: "Customer Support Bot",
-          resourceType: "Stripe Charge",
+          policyId: "pol_333_fr",
+          policyName: "Financial-Reporting-RO",
+          assistantName: "Fin-Sentry Alpha",
+          resourceType: "Payment_Gateway_v3",
           actionAttempted: "stripe:Refund",
           deniedAt: Date.now() - 1000 * 60 * 60 * 12,
+        },
+      ];
+    },
+  });
+}
+
+export function useSecurityControls() {
+  return useQuery({
+    queryKey: ["security", "controls"],
+    queryFn: async (): Promise<SecurityControlItem[]> => {
+      await delay(550);
+      return [
+        {
+          id: "ctrl_connected_account_rotation",
+          title: "Connected Account Review",
+          description:
+            "Stripe production is marked needs-attention and is linked to Fin-Sentry Alpha through an active finance delegation.",
+          severity: "high",
+          sourceType: "connected_account",
+          sourceId: "conn_2111b_st",
+          sourceLabel: "stripe-us-main",
+          relatedDelegationId: "dlg_alpha_fin",
+          route: "/delegations/$delegationId",
+          actionLabel: "Rotate Now",
+          actionReason:
+            "Key rotation is disabled until connected-account mutation flows exist.",
+        },
+        {
+          id: "ctrl_delegation_review",
+          title: "Delegation Pending Attention",
+          description:
+            "The finance Stripe read delegation has a related security signal and should be reviewed before expanding scopes.",
+          severity: "medium",
+          sourceType: "delegation",
+          sourceId: "dlg_alpha_fin",
+          sourceLabel: "Finance Stripe read delegation",
+          route: "/delegations/$delegationId",
+          actionLabel: "Revoke Delegation",
+          actionReason:
+            "Delegation revocation is disabled until a safe mutation flow exists.",
         },
       ];
     },

@@ -29,6 +29,7 @@ const paths = {
   policiesDetail: `/${rootPaths.policiesRoot}/$policyId`,
   policiesSimulation: `/${rootPaths.policiesRoot}/$policyId/simulation`,
   delegations: `/${rootPaths.delegationsRoot}`,
+  delegationsDetail: `/${rootPaths.delegationsRoot}/$delegationId`,
   security: `/${rootPaths.securityRoot}`,
   securityControls: `/${rootPaths.securityRoot}/controls`,
   audit: `/${rootPaths.auditRoot}`,

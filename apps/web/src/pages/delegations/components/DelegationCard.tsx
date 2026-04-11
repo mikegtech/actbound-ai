@@ -6,13 +6,14 @@ import {
   Stack,
   Typography,
   Chip,
+  Button,
 } from "@mui/material";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { Delegation } from "../types";
 import { DelegationStatusBadge } from "./DelegationStatusBadge";
 import IconifyIcon from "components/base/IconifyIcon";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { UnavailableAction } from "components/common/UnavailableAction";
 
 dayjs.extend(relativeTime);
 
@@ -140,14 +141,19 @@ export const DelegationCard = ({ delegation }: Props) => {
           bgcolor: "surfaceContainerLow.main",
         }}
       >
-        <UnavailableAction
-          variant="text"
-          size="small"
-          reason="Delegation detail is not implemented yet."
-          endIcon={<IconifyIcon icon="ic:baseline-arrow-right-alt" />}
+        <RouterLink
+          to="/delegations/$delegationId"
+          params={{ delegationId: delegation.id }}
+          style={{ textDecoration: "none" }}
         >
-          View Detail
-        </UnavailableAction>
+          <Button
+            variant="text"
+            size="small"
+            endIcon={<IconifyIcon icon="ic:baseline-arrow-right-alt" />}
+          >
+            View Detail
+          </Button>
+        </RouterLink>
       </Box>
     </Card>
   );

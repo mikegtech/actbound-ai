@@ -1,18 +1,118 @@
-import { Box, Typography, Stack, Divider, Paper, Grid } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Stack,
+  Divider,
+  Paper,
+  Grid,
+  Chip,
+  type ChipProps,
+} from "@mui/material";
 import { Link as RouterLink } from "@tanstack/react-router";
 import { PageHeader } from "components/common/PageHeader";
 import { SectionWrapper } from "components/common/SectionWrapper";
 import { useAssistantDetail } from "./api/useAssistantQueries";
+import { useAssistantTrustBoundarySummary } from "./api/useAssistantTrustBoundaryQueries";
 import { AssistantStatusBadge } from "./components/AssistantStatusBadge";
 import { CapabilitySummarySection } from "./components/CapabilitySummarySection";
-import { LoadingState, ErrorState } from "components/common/StateViews";
+import {
+  LoadingState,
+  ErrorState,
+  EmptyState,
+} from "components/common/StateViews";
 import IconifyIcon from "components/base/IconifyIcon";
 import dayjs from "dayjs";
 import { UnavailableAction } from "components/common/UnavailableAction";
+import type {
+  AssistantBoundaryLink,
+  AssistantConnectedAccountLink,
+  AssistantTrustSignal,
+} from "./types";
 
 interface AssistantDetailProps {
   id: string;
 }
+
+const connectionStateColor = (
+  state: AssistantConnectedAccountLink["connectionState"],
+): ChipProps["color"] => {
+  if (state === "HEALTHY") return "success";
+  if (state === "NEEDS_ATTENTION") return "warning";
+  if (state === "DISCONNECTED") return "error";
+  return "default";
+};
+
+const signalColor = (
+  severity: AssistantTrustSignal["severity"],
+): ChipProps["color"] => {
+  if (severity === "high") return "error";
+  if (severity === "warning") return "warning";
+  return "default";
+};
+
+const BoundaryLinkRow = ({ item }: { item: AssistantBoundaryLink }) => {
+  const content = (
+    <Box>
+      <Typography component="span" variant="body2" color="primary">
+        {item.name}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" display="block">
+        {item.id}
+        {item.meta ? ` - ${item.meta}` : ""}
+      </Typography>
+    </Box>
+  );
+
+  if (item.route === "/organizations/$organizationId") {
+    return (
+      <RouterLink
+        to="/organizations/$organizationId"
+        params={{ organizationId: item.id }}
+        style={{ textDecoration: "none" }}
+      >
+        {content}
+      </RouterLink>
+    );
+  }
+
+  if (item.route === "/resources/$resourceId") {
+    return (
+      <RouterLink
+        to="/resources/$resourceId"
+        params={{ resourceId: item.id }}
+        style={{ textDecoration: "none" }}
+      >
+        {content}
+      </RouterLink>
+    );
+  }
+
+  if (item.route === "/policies/$policyId") {
+    return (
+      <RouterLink
+        to="/policies/$policyId"
+        params={{ policyId: item.id }}
+        style={{ textDecoration: "none" }}
+      >
+        {content}
+      </RouterLink>
+    );
+  }
+
+  if (item.route === "/delegations/$delegationId") {
+    return (
+      <RouterLink
+        to="/delegations/$delegationId"
+        params={{ delegationId: item.id }}
+        style={{ textDecoration: "none" }}
+      >
+        {content}
+      </RouterLink>
+    );
+  }
+
+  return content;
+};
 
 const AssistantDetail = ({ id }: AssistantDetailProps) => {
   const {
@@ -22,6 +122,11 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
     error,
     refetch,
   } = useAssistantDetail(id);
+  const {
+    data: trustBoundary,
+    isLoading: trustBoundaryLoading,
+    isError: trustBoundaryError,
+  } = useAssistantTrustBoundarySummary(id);
 
   if (isLoading) {
     return (
@@ -111,17 +216,29 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
                   <Typography variant="caption" color="text.secondary">
                     Organization
                   </Typography>
-                  <Typography variant="body1">
-                    <RouterLink
-                      to="/organizations/$organizationId"
-                      params={{ organizationId: assistant.organizationId }}
-                      style={{ textDecoration: "none" }}
+                  <RouterLink
+                    to="/organizations/$organizationId"
+                    params={{ organizationId: assistant.organizationId }}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <Typography
+                      component="span"
+                      variant="body1"
+                      color="primary"
                     >
-                      <Typography component="span" color="primary">
-                        {assistant.organizationId}
-                      </Typography>
-                    </RouterLink>
-                  </Typography>
+                      {trustBoundary?.organization.name ??
+                        assistant.organizationId}
+                    </Typography>
+                  </RouterLink>
+                  {trustBoundary?.organization.meta && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
+                      {trustBoundary.organization.meta}
+                    </Typography>
+                  )}
                 </Box>
                 <Divider />
                 <Box>
@@ -141,29 +258,201 @@ const AssistantDetail = ({ id }: AssistantDetailProps) => {
           <Stack spacing={4}>
             <CapabilitySummarySection capabilities={assistant.capabilities} />
 
-            <SectionWrapper title="Connected Integrations">
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  bgcolor: "transparent",
-                }}
-              >
-                <IconifyIcon
+            <SectionWrapper title="Trust Boundary Context">
+              {trustBoundaryLoading ? (
+                <LoadingState />
+              ) : trustBoundaryError || !trustBoundary ? (
+                <EmptyState
+                  title="Boundary summary unavailable"
+                  description="No typed frontend boundary summary exists for this assistant yet. Mutating controls remain disabled until gateway-backed flows are defined."
                   icon="material-symbols:account-tree-outline-rounded"
-                  sx={{ fontSize: 32, color: "text.disabled", mr: 2 }}
                 />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    OAuth Delegations Configured
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    All bounded integrations will appear here.
-                  </Typography>
-                </Box>
-              </Paper>
+              ) : (
+                <Stack spacing={3}>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Paper variant="outlined" sx={{ p: 2, height: "100%" }}>
+                        <Typography variant="subtitle2" fontWeight={700} mb={1}>
+                          Reachable Resources
+                        </Typography>
+                        {trustBoundary.reachableResources.length > 0 ? (
+                          <Stack spacing={1.5}>
+                            {trustBoundary.reachableResources.map(
+                              (resource) => (
+                                <BoundaryLinkRow
+                                  key={resource.id}
+                                  item={resource}
+                                />
+                              ),
+                            )}
+                          </Stack>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            No reachable resources are listed in the frontend
+                            mock.
+                          </Typography>
+                        )}
+                      </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Paper variant="outlined" sx={{ p: 2, height: "100%" }}>
+                        <Typography variant="subtitle2" fontWeight={700} mb={1}>
+                          Delegated Accounts
+                        </Typography>
+                        {trustBoundary.delegatedAccounts.length > 0 ? (
+                          <Stack spacing={1.5}>
+                            {trustBoundary.delegatedAccounts.map((account) => (
+                              <Box key={account.id}>
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  alignItems="center"
+                                >
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {account.provider}
+                                  </Typography>
+                                  <Chip
+                                    label={account.connectionState.replace(
+                                      "_",
+                                      " ",
+                                    )}
+                                    color={connectionStateColor(
+                                      account.connectionState,
+                                    )}
+                                    size="small"
+                                  />
+                                </Stack>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  display="block"
+                                >
+                                  {account.accountName} - {account.id}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            No delegated connected accounts are listed.
+                          </Typography>
+                        )}
+                      </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Paper variant="outlined" sx={{ p: 2, height: "100%" }}>
+                        <Typography variant="subtitle2" fontWeight={700} mb={1}>
+                          Governing Policies
+                        </Typography>
+                        {trustBoundary.governingPolicies.length > 0 ? (
+                          <Stack spacing={1.5}>
+                            {trustBoundary.governingPolicies.map((policy) => (
+                              <BoundaryLinkRow key={policy.id} item={policy} />
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            No governing policies are listed for this mock
+                            assistant.
+                          </Typography>
+                        )}
+                      </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Paper variant="outlined" sx={{ p: 2, height: "100%" }}>
+                        <Typography variant="subtitle2" fontWeight={700} mb={1}>
+                          Delegations
+                        </Typography>
+                        {trustBoundary.delegations.length > 0 ? (
+                          <Stack spacing={1.5}>
+                            {trustBoundary.delegations.map((delegation) => (
+                              <BoundaryLinkRow
+                                key={delegation.id}
+                                item={delegation}
+                              />
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            No active delegation relationship is listed.
+                          </Typography>
+                        )}
+                      </Paper>
+                    </Grid>
+                  </Grid>
+
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
+                      Audit & Security Signals
+                    </Typography>
+                    <Stack spacing={1}>
+                      {[
+                        ...trustBoundary.auditSignals,
+                        ...trustBoundary.securitySignals,
+                      ].length > 0 ? (
+                        [
+                          ...trustBoundary.auditSignals,
+                          ...trustBoundary.securitySignals,
+                        ].map((signal) => (
+                          <Stack
+                            key={signal.id}
+                            direction={{ xs: "column", sm: "row" }}
+                            justifyContent="space-between"
+                            spacing={1}
+                          >
+                            <Box>
+                              <Typography variant="body2" fontWeight={600}>
+                                {signal.label}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                display="block"
+                              >
+                                {signal.id}
+                              </Typography>
+                            </Box>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Chip
+                                label={signal.severity}
+                                color={signalColor(signal.severity)}
+                                size="small"
+                              />
+                              <RouterLink
+                                to={
+                                  signal.route === "/audit"
+                                    ? "/audit"
+                                    : "/security"
+                                }
+                                style={{ textDecoration: "none" }}
+                              >
+                                <Typography variant="caption" color="primary">
+                                  Open{" "}
+                                  {signal.route === "/audit"
+                                    ? "audit"
+                                    : "security"}
+                                </Typography>
+                              </RouterLink>
+                            </Stack>
+                          </Stack>
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No audit or security signals are listed for this
+                          assistant.
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Paper>
+                </Stack>
+              )}
             </SectionWrapper>
           </Stack>
         </Grid>

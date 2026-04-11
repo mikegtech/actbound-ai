@@ -9,10 +9,16 @@ import {
   Divider,
   TextField,
   Alert,
+  CircularProgress,
+  Chip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { PageHeader } from "components/common/PageHeader";
 import IconifyIcon from "components/base/IconifyIcon";
 import { UnavailableAction } from "components/common/UnavailableAction";
+import { useConnectedAccounts } from "pages/delegations/api/useDelegationQueries";
+import { useSettingsSnapshot } from "./api/useSettingsQueries";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,8 +44,20 @@ function SettingsTabPanel(props: TabPanelProps) {
 
 const Settings = () => {
   const [tabIndex, setTabIndex] = useState(0);
+  const theme = useTheme();
+  const isCompact = useMediaQuery(theme.breakpoints.down("md"));
+  const {
+    data: settings,
+    isLoading: settingsLoading,
+    isError: settingsError,
+  } = useSettingsSnapshot();
+  const {
+    data: connectedAccounts,
+    isLoading: accountsLoading,
+    isError: accountsError,
+  } = useConnectedAccounts();
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
   };
 
@@ -49,13 +67,26 @@ const Settings = () => {
         {/* Header Block */}
         <PageHeader
           title="Settings"
-          subtitle="Review frontend settings placeholders for identity, defaults, integrations, and security controls."
+          subtitle="Review read-only frontend settings for identity, defaults, integrations, and security controls."
         />
 
         <Alert severity="info" sx={{ borderRadius: 2 }}>
-          Settings are read-only in this frontend mock. Mutation controls are
-          disabled until safe gateway-backed flows exist.
+          Settings are backed by typed frontend mock data. Mutation controls are
+          disabled until safe gateway-backed flows exist, so no fake success
+          states are shown.
         </Alert>
+
+        {settingsError && (
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            Failed to load settings snapshot.
+          </Alert>
+        )}
+
+        {accountsError && (
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            Failed to load connected-account data for integrations.
+          </Alert>
+        )}
 
         {/* Content Layout */}
         <Paper
@@ -65,6 +96,7 @@ const Settings = () => {
             borderColor: "divider",
             borderRadius: 3,
             display: "flex",
+            flexDirection: { xs: "column", md: "row" },
             minHeight: 600,
           }}
         >
@@ -72,13 +104,14 @@ const Settings = () => {
           <Box
             sx={{
               borderRight: 1,
+              borderBottom: { xs: 1, md: 0 },
               borderColor: "divider",
-              minWidth: 240,
+              minWidth: { md: 240 },
               py: 3,
             }}
           >
             <Tabs
-              orientation="vertical"
+              orientation={isCompact ? "horizontal" : "vertical"}
               variant="scrollable"
               value={tabIndex}
               onChange={handleTabChange}
@@ -140,11 +173,15 @@ const Settings = () => {
                   </Typography>
                   <TextField
                     fullWidth
-                    placeholder="System Administrator"
+                    value={settings?.profile.principalName ?? ""}
                     size="small"
                     variant="outlined"
                     disabled
-                    helperText="Profile persistence is not wired yet."
+                    helperText={
+                      settingsLoading
+                        ? "Loading typed profile snapshot..."
+                        : "Read-only mock profile. Profile persistence is not wired yet."
+                    }
                   />
                 </Box>
                 <Box mt={2}>
@@ -153,11 +190,15 @@ const Settings = () => {
                   </Typography>
                   <TextField
                     fullWidth
-                    placeholder="admin@domain.com"
+                    value={settings?.profile.email ?? ""}
                     size="small"
                     variant="outlined"
                     disabled
-                    helperText="Profile persistence is not wired yet."
+                    helperText={
+                      settingsLoading
+                        ? "Loading typed profile snapshot..."
+                        : "Read-only mock profile. Profile persistence is not wired yet."
+                    }
                   />
                 </Box>
                 <Box pt={2}>
@@ -179,8 +220,8 @@ const Settings = () => {
                   Global Defaults
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Specify the fail-over logic boundaries when active specific
-                  policies are untethered.
+                  Review the default frontend trust-boundary behavior for
+                  assistant requests that do not match an explicit delegation.
                 </Typography>
 
                 <Box
@@ -194,12 +235,16 @@ const Settings = () => {
                   }}
                 >
                   <Typography variant="body1" fontWeight={600} mb={1}>
-                    Unrecognized Delegation Handling
+                    {settings?.defaultBoundary.label ??
+                      "Unrecognized Delegation Handling"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mb={2}>
-                    Automatically DENY requests originating from assistant
-                    workflows lacking immediate verification trust bounds.
+                    {settings?.defaultBoundary.description ??
+                      "Loading default boundary snapshot..."}
                   </Typography>
+                  {settingsLoading && (
+                    <CircularProgress size={20} sx={{ mb: 2 }} />
+                  )}
                   <UnavailableAction
                     variant="outlined"
                     color="primary"
@@ -218,37 +263,101 @@ const Settings = () => {
                   Registered Integration Systems
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  OAuth mappings enabling autonomous ActBound capabilities over
-                  third-party REST services.
+                  Connected accounts are read from the same Trust Core mock data
+                  used by Delegations, avoiding conflicting settings copy.
                 </Typography>
 
-                <Box
-                  mt={2}
-                  p={3}
-                  sx={{
-                    border: "1px dashed",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    textAlign: "center",
-                  }}
-                >
-                  <IconifyIcon
-                    icon="ph:plug"
-                    fontSize={32}
-                    sx={{ color: "text.secondary", mb: 1 }}
-                  />
-                  <Typography variant="body1" fontWeight={600}>
-                    Integration Management Pending
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                  >
-                    Connected account records are reviewed from Trust Core until
-                    settings integration management is wired.
-                  </Typography>
-                </Box>
+                {accountsLoading ? (
+                  <Box py={4}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  <Stack spacing={2}>
+                    {connectedAccounts?.map((account) => (
+                      <Box
+                        key={account.id}
+                        p={2}
+                        sx={{
+                          border: "1px solid",
+                          borderColor: "divider",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          justifyContent="space-between"
+                          spacing={1}
+                        >
+                          <Box>
+                            <Typography variant="body1" fontWeight={600}>
+                              {account.provider.toUpperCase()} -{" "}
+                              {account.accountName}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              display="block"
+                            >
+                              {account.id}
+                              {account.identityEmail
+                                ? ` - ${account.identityEmail}`
+                                : ""}
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label={account.connectionState.replace("_", " ")}
+                            color={
+                              account.connectionState === "HEALTHY"
+                                ? "success"
+                                : account.connectionState === "DISCONNECTED"
+                                  ? "error"
+                                  : "warning"
+                            }
+                            size="small"
+                            sx={{
+                              alignSelf: { xs: "flex-start", sm: "center" },
+                            }}
+                          />
+                        </Stack>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          mt={1}
+                        >
+                          Used by {account.assistantIds.length} assistant
+                          {account.assistantIds.length === 1 ? "" : "s"} in the
+                          current frontend trust model.
+                        </Typography>
+                      </Box>
+                    ))}
+                    {connectedAccounts?.length === 0 && (
+                      <Box
+                        p={3}
+                        sx={{
+                          border: "1px dashed",
+                          borderColor: "divider",
+                          borderRadius: 2,
+                          textAlign: "center",
+                        }}
+                      >
+                        <IconifyIcon
+                          icon="ph:plug"
+                          fontSize={32}
+                          sx={{ color: "text.secondary", mb: 1 }}
+                        />
+                        <Typography variant="body1" fontWeight={600}>
+                          No connected accounts listed
+                        </Typography>
+                      </Box>
+                    )}
+                    <UnavailableAction
+                      variant="outlined"
+                      reason="Integration management is read-only until connected-account mutation flows exist."
+                    >
+                      Manage Integrations
+                    </UnavailableAction>
+                  </Stack>
+                )}
               </Stack>
             </SettingsTabPanel>
 
@@ -258,11 +367,42 @@ const Settings = () => {
                   Security Enforcement
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Review active tokens or force global revocations for all your
-                  active contexts.
+                  Review active frontend mock contexts and delegated principal
+                  counts. Destructive auth actions remain disabled.
                 </Typography>
 
                 <Divider sx={{ my: 2 }} />
+
+                <Box
+                  p={3}
+                  sx={{
+                    bgcolor: "background.elevation1",
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography variant="body1" fontWeight={600} mb={1}>
+                    Current Session Snapshot
+                  </Typography>
+                  {settingsLoading ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        Active contexts:{" "}
+                        {settings?.security.activeContexts ?? 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Delegated principals:{" "}
+                        {settings?.security.delegatedPrincipalCount ?? 0}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {settings?.security.sessionPolicy}
+                      </Typography>
+                    </Stack>
+                  )}
+                </Box>
 
                 <Box>
                   <Typography variant="body1" color="error" fontWeight={600}>
